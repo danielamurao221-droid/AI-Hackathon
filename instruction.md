@@ -187,3 +187,9 @@ Test these before or alongside the Supabase work.
 1. Authentication → Sign In / Providers → Email: turn **off** "Confirm email".
 2. Authentication → URL Configuration: set Site URL to the deployed URL, and add it plus `http://localhost:5173` to Redirect URLs (needed for password-reset links).
 
+## Hosting
+
+- **GitHub:** https://github.com/danielamurao221-droid/AI-Hackathon (public, branch `main`).
+- **Vercel:** project `thames4/pacer` (account `danielamurao221-3155`), production URL https://pacer-chi-taupe.vercel.app. Static site, no build step. `.vercelignore` keeps `instruction.md`, `CLAUDE.md` and `supabase/` off the site.
+- Git auto-deploy is not connected yet: the Vercel account needs a GitHub login connection first, then run `vercel git connect`. Until then, deploy with `npx vercel@64.0.2 deploy --prod`.
+
