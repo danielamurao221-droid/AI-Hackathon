@@ -1,0 +1,5 @@
+# Only index.html, styles.css and app.js are served. Keep notes and migrations off the public site.
+instruction.md
+CLAUDE.md
+supabase/
+.claude/

@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Pacer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="auth" id="auth" hidden>
+  <div class="auth-side">
+    <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect class="lg-bg" width="32" height="32" rx="9"/><path class="lg-p" fill-rule="evenodd" d="M11 8h7a6 6 0 0 1 0 12h-3v4h-4zM15 12v4h3a2 2 0 0 0 0-4z"/></svg><span class="brand-text"><b>Pacer</b><span>Student planner</span></span></div>
+    <div>
+      <h1>Know what’s due before it’s due.</h1>
+      <p>Track every assignment, reading and exam across your classes, and see what to work on next.</p>
+    </div>
+    <div class="feat">
+      <div style="--x:var(--crit)"><i></i><div><b>Deadline reminders</b><span>Overdue and due-today alerts the moment you open it</span></div></div>
+      <div style="--x:var(--warn)"><i></i><div><b>Ranked priorities</b><span>Urgency and importance, sorted for you</span></div></div>
+      <div style="--x:var(--c3)"><i></i><div><b>Your week by subject</b><span>See which class is taking the most time</span></div></div>
+    </div>
+  </div>
+  <div class="auth-main">
+    <div class="auth-card">
+      <div id="authPanel">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div><h2 id="authTitle">Welcome back</h2><p class="lede" id="authLede">Sign in to see your tasks and deadlines.</p></div>
+          <div class="filters auth-tabs" role="tablist" aria-label="Account">
+            <button type="button" role="tab" data-auth-mode="signin" aria-selected="true" aria-pressed="true">Sign in</button>
+            <button type="button" role="tab" data-auth-mode="signup" aria-selected="false" aria-pressed="false">Create account</button>
+          </div>
+          <form id="authForm" novalidate>
+            <div class="field" id="nameField" hidden><label for="a-name">Your name</label><input id="a-name" autocomplete="name" maxlength="60" placeholder="e.g. Alex Rivera"></div>
+            <div class="field"><label for="a-email">Email</label><input id="a-email" type="email" autocomplete="email" placeholder="you@school.edu"></div>
+            <div class="field">
+              <div class="label-row"><label for="a-pass">Password</label><button type="button" class="link" id="forgotBtn">Forgot password?</button></div>
+              <div class="pw"><input id="a-pass" type="password" autocomplete="current-password" placeholder="Your password"><button type="button" data-showpw="a-pass" aria-label="Show password">Show</button></div>
+              <p class="field-hint" id="pwHint" hidden>At least 8 characters.</p>
+            </div>
+            <p class="form-err" id="authErr" hidden></p>
+            <button class="btn primary block" type="submit" id="authSubmit">Sign in</button>
+          </form>
+        </div>
+      </div>
+
+      <div id="resetPanel" hidden>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div><h2>Reset your password</h2><p class="lede">Enter your account email and we’ll send you a link to choose a new password.</p></div>
+          <form id="resetForm" novalidate>
+            <div class="field"><label for="r-email">Email</label><input id="r-email" type="email" autocomplete="email" placeholder="you@school.edu"></div>
+            <p class="form-err" id="resetErr" hidden></p>
+            <p class="form-ok" id="resetOk" hidden></p>
+            <button class="btn primary block" type="submit" id="resetSubmit">Send reset link</button>
+          </form>
+          <button type="button" class="link" id="backToSignin">← Back to sign in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app" hidden>
+  <aside class="side">
+    <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect class="lg-bg" width="32" height="32" rx="9"/><path class="lg-p" fill-rule="evenodd" d="M11 8h7a6 6 0 0 1 0 12h-3v4h-4zM15 12v4h3a2 2 0 0 0 0-4z"/></svg><span class="brand-text"><b>Pacer</b><span>Student planner</span></span></div>
+    <nav class="nav" aria-label="Sections">
+      <button data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+      <button data-view="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>Tasks<span class="count" id="navCount">0</span></button>
+      <button data-view="priorities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Priorities</button>
+      <button data-view="subjects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19"/><path d="M8 7h7"/></svg>Subjects</button>
+    </nav>
+    <div class="today-card"><small>Today</small><strong id="sideDate"></strong><span id="sideWeek"></span></div>
+    <button class="me" data-view="settings" aria-label="Account and settings"><span class="avatar" id="meAvatar"></span><span class="me-text"><b id="meName"></b><span id="meEmail"></span></span></button>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="alerts" id="alerts" aria-live="polite"></div>
+      <button class="btn cta" data-go="tasks" data-focus="1" aria-label="New task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="bell-label">New task</span></button>
+      <button class="bell" id="bell" data-open-rem="1" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bell-label">Reminders</span><span class="badge" id="bellBadge" hidden></span></button>
+    </div>
+    <div class="banner" id="banner" hidden></div>
+
+    <section class="view" id="v-dashboard" hidden>
+      <div class="head">
+        <div><h1>Dashboard</h1><p id="dashSub">Your workload at a glance.</p></div>
+      </div>
+      <div class="stats" id="stats"></div>
+      <div class="dash-grid">
+        <div class="card">
+          <div class="card-head">
+            <div><h2 id="breakTitle">This week by subject</h2><p class="sub" id="weekRange"></p></div>
+            <div class="filters" role="group" aria-label="Group by">
+              <button data-group="subject" aria-pressed="true">Subject</button>
+              <button data-group="category" aria-pressed="false">Category</button>
+            </div>
+          </div>
+          <div id="bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Up next</h2><p class="sub">Top of your priority list</p></div><button class="btn ghost" data-go="priorities">See all</button></div>
+          <div class="list" id="upnext"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="v-tasks" hidden>
+      <div class="head"><div><h1>Tasks</h1><p>Add assignments, readings and exam prep, then tick them off.</p></div></div>
+      <div class="tasks-grid">
+        <div class="card">
+          <div class="card-head"><h2>New task</h2></div>
+          <form id="form" novalidate>
+            <div class="field"><label for="f-name">Task</label><input id="f-name" placeholder="e.g. Lab report: titration" maxlength="140" autocomplete="off"></div>
+            <div class="field"><label for="f-subject">Subject</label>
+              <select id="f-subject"></select>
+              <input id="f-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
+            </div>
+            <div class="field"><label for="f-category">Category <span class="opt">(optional)</span></label>
+              <select id="f-category"></select>
+              <input id="f-category-new" placeholder="New category name, e.g. Quiz" maxlength="40" autocomplete="off" hidden aria-label="New category name">
+              <p class="field-hint">Edit subjects and categories in <button type="button" data-go="subjects">Subjects</button>.</p>
+            </div>
+            <div class="field"><label for="f-due">Due date</label><input id="f-due" type="date"></div>
+            <div class="field"><span class="lab" id="imp-lab">Importance</span>
+              <div class="seg" role="radiogroup" aria-labelledby="imp-lab">
+                <input type="radio" name="imp" id="imp-low" value="low"><label for="imp-low">Low</label>
+                <input type="radio" name="imp" id="imp-med" value="medium" checked><label for="imp-med">Medium</label>
+                <input type="radio" name="imp" id="imp-high" value="high"><label for="imp-high">High</label>
+              </div>
+            </div>
+            <p class="form-err" id="formErr" hidden></p>
+            <button class="btn cta" type="submit">Add task</button>
+          </form>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div><h2>All tasks</h2><p class="sub" id="taskSub"></p></div>
+            <div class="filters" role="group" aria-label="Filter tasks">
+              <button data-filter="active" aria-pressed="true">Active</button>
+              <button data-filter="done" aria-pressed="false">Done</button>
+              <button data-filter="all" aria-pressed="false">All</button>
+            </div>
+          </div>
+          <p class="order-hint" id="taskHint"></p>
+          <div class="list" id="taskList" data-reorder="task"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="v-priorities" hidden>
+      <div class="head">
+        <div><h1>Priorities</h1><p>Active tasks ranked by how soon they're due and how much they matter.</p></div>
+        <button class="btn" id="prioReset" data-order-mode="prio:auto" hidden>Reset to automatic ranking</button>
+      </div>
+      <p class="order-hint" id="prioHint"></p>
+      <div class="prio" id="prioList" data-reorder="prio"></div>
+      <p class="how"><b>How the ranking works.</b> Each task gets urgency points from its due date (overdue scores highest, then today, tomorrow, this week, and later) plus importance points (high, medium, low). Higher totals rank first. When two tasks tie, the one due sooner wins. Drag a task by its handle to set your own order; new tasks are slotted in by their score.</p>
+    </section>
+
+    <section class="view" id="v-subjects" hidden>
+      <div class="head"><div><h1>Subjects</h1><p>Manage your classes and types of work. Click a name to rename it; every task using it updates too.</p></div></div>
+      <div class="subj-grid">
+        <div class="card">
+          <div class="card-head"><div><h2>Subjects</h2><p class="sub">The classes you're taking</p></div></div>
+          <div class="items" id="items-subjects"></div>
+          <form class="add-item" data-kind="subjects"><input id="add-subjects" placeholder="Add a subject, e.g. Biology" maxlength="40" autocomplete="off" aria-label="New subject"><button class="btn primary" type="submit">Add</button></form>
+        </div>
+        <div class="card">
+          <div class="card-head"><div><h2>Categories</h2><p class="sub">Kinds of work, like readings or exam prep</p></div></div>
+          <div class="items" id="items-categories"></div>
+          <form class="add-item" data-kind="categories"><input id="add-categories" placeholder="Add a category, e.g. Quiz" maxlength="40" autocomplete="off" aria-label="New category"><button class="btn primary" type="submit">Add</button></form>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="v-settings" hidden>
+      <div class="head"><div><h1>Account &amp; settings</h1><p>Your profile, password and how the app looks.</p></div></div>
+      <div class="set-grid">
+        <div class="set-col">
+          <div class="card">
+            <div class="profile-top"><span class="avatar lg" id="pAvatar"></span><div><b id="pName"></b><span id="pEmail"></span></div></div>
+            <dl class="kv">
+              <dt>Account ID</dt><dd class="mono" id="pId"></dd>
+              <dt>Member since</dt><dd id="pSince"></dd>
+              <dt>Sign-in method</dt><dd>Email and password</dd>
+            </dl>
+            <form id="profileForm" novalidate>
+              <div class="field"><label for="p-name">Display name</label><input id="p-name" autocomplete="name" maxlength="60"></div>
+              <div class="field"><label for="p-email">Email</label><input id="p-email" type="email" autocomplete="email"></div>
+              <div class="field"><label for="p-school">School or program <span class="opt">(optional)</span></label><input id="p-school" maxlength="80" placeholder="e.g. BS Computer Science, 2nd year"></div>
+              <p class="form-err" id="profileErr" hidden></p>
+              <div><button class="btn primary" type="submit" id="profileSave">Save changes</button></div>
+            </form>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Password</h2><p class="sub">Choose a new password with at least 8 characters.</p></div></div>
+            <form id="pwForm" novalidate>
+              <div class="field"><label for="pw-new">New password</label><div class="pw"><input id="pw-new" type="password" autocomplete="new-password"><button type="button" data-showpw="pw-new" aria-label="Show password">Show</button></div></div>
+              <div class="field"><label for="pw-confirm">Confirm new password</label><div class="pw"><input id="pw-confirm" type="password" autocomplete="new-password"><button type="button" data-showpw="pw-confirm" aria-label="Show password">Show</button></div></div>
+              <p class="form-err" id="pwErr" hidden></p>
+              <p class="form-ok" id="pwOk" hidden></p>
+              <div><button class="btn primary" type="submit" id="pwSave">Update password</button></div>
+            </form>
+          </div>
+        </div>
+        <div class="set-col">
+          <div class="card">
+            <div class="card-head"><div><h2>Appearance</h2><p class="sub">Saved on this device.</p></div></div>
+            <div class="theme-opts" role="radiogroup" aria-label="Theme">
+              <div class="theme-opt"><input type="radio" name="theme" id="th-system" value="system"><label for="th-system"><span class="preview system"><i></i><i></i></span>System</label></div>
+              <div class="theme-opt"><input type="radio" name="theme" id="th-light" value="light"><label for="th-light"><span class="preview light"><i></i><i></i></span>Light</label></div>
+              <div class="theme-opt"><input type="radio" name="theme" id="th-dark" value="dark"><label for="th-dark"><span class="preview dark"><i></i><i></i></span>Dark</label></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Reminders</h2><p class="sub">Which deadlines show in the alert bar and pop-ups.</p></div></div>
+            <div class="set-row"><label for="setRemDays">Remind me about tasks due within</label>
+              <select id="setRemDays" class="rem-select"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="5">5 days</option><option value="7">7 days</option><option value="14">14 days</option></select>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Session</h2><p class="sub" id="sessionNote"></p></div></div>
+            <button class="btn" id="signOutBtn">Sign out</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="scrim" id="scrim" data-close-rem="1" hidden></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
+  <div class="panel-head"><h2 id="panelTitle" tabindex="-1">Reminders</h2><button class="btn ghost" data-close-rem="1">Close</button></div>
+  <div class="panel-set"><label for="remDays">Remind me about tasks due within</label>
+    <select id="remDays" class="rem-select"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="5">5 days</option><option value="7">7 days</option><option value="14">14 days</option></select>
+  </div>
+  <div class="panel-body" id="remBody"></div>
+  <div class="panel-foot">Reminders appear while this page is open. Snoozed tasks come back the next day.</div>
+</aside>
+<div class="modal" id="editModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+    <div class="card-head"><h2 id="editTitle" tabindex="-1">Edit task</h2><button class="btn ghost" type="button" data-close-edit="1">Cancel</button></div>
+    <form id="editForm" novalidate>
+      <div class="field"><label for="e-name">Task</label><input id="e-name" maxlength="140" autocomplete="off"></div>
+      <div class="field"><label for="e-subject">Subject</label>
+        <select id="e-subject"></select>
+        <input id="e-subject-new" placeholder="New subject name" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
+      </div>
+      <div class="field"><label for="e-category">Category <span class="opt">(optional)</span></label>
+        <select id="e-category"></select>
+        <input id="e-category-new" placeholder="New category name" maxlength="40" autocomplete="off" hidden aria-label="New category name">
+      </div>
+      <div class="field"><label for="e-due">Due date</label><input id="e-due" type="date"></div>
+      <div class="field"><span class="lab" id="eimp-lab">Importance</span>
+        <div class="seg" role="radiogroup" aria-labelledby="eimp-lab">
+          <input type="radio" name="eimp" id="eimp-low" value="low"><label for="eimp-low">Low</label>
+          <input type="radio" name="eimp" id="eimp-medium" value="medium"><label for="eimp-medium">Medium</label>
+          <input type="radio" name="eimp" id="eimp-high" value="high"><label for="eimp-high">High</label>
+        </div>
+      </div>
+      <label class="done-toggle" for="e-done"><input type="checkbox" id="e-done"> Mark as done</label>
+      <p class="form-err" id="editErr" hidden></p>
+      <div class="modal-actions">
+        <button class="btn primary" type="submit">Save changes</button>
+        <span class="spacer"></span>
+        <span id="editDelete"><button class="btn ghost danger-text" type="button" data-edit-del="ask">Delete task</button></span>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="pops" id="pops" aria-live="polite"></div>
+<div class="toast" id="toast" hidden role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
