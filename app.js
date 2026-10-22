@@ -123,14 +123,14 @@
     const row = {id:t.id, user_id:t.userId || session.user.id, name:t.name,
       subject: t.projectId ? '' : (t.subject || ''), category:t.category || '', due:t.due, importance:t.importance,
       done:!!t.done, done_at: t.doneAt ? new Date(t.doneAt).toISOString() : null,
-      created_at: new Date(t.createdAt || Date.now()).toISOString(), example:!!t.example};
+      created_at: new Date(t.createdAt || Date.now()).toISOString(), example:!!t.example, notes:(t.notes || '').slice(0, 4000)};
     // The old schema has no status or project_id columns.
     if (v2) { row.project_id = t.projectId || null; row.status = statusOf(t); }
     return row;
   }
   const fromRow = r => ({id:r.id, userId:r.user_id, projectId:r.project_id || null, name:r.name, subject:r.subject || '', category:r.category || '',
     due:r.due, importance:r.importance, status:r.status || (r.done ? 'done' : 'todo'), done:r.done,
-    doneAt: r.done_at ? Date.parse(r.done_at) : null, createdAt: Date.parse(r.created_at),
+    doneAt: r.done_at ? Date.parse(r.done_at) : null, createdAt: Date.parse(r.created_at), notes: r.notes || '',
     ...(r.example ? {example:true} : {})});
   async function saveTasks(list){
     if (mode !== 'db' || !session || !list.length) return;
@@ -309,17 +309,25 @@
   function resetOrder(){ saveLists({...materialize(), prioMode:'auto'}); toast('Back to automatic ranking'); }
 
   // ---------- task actions ----------
+  // Every change below can be undone from the message it shows: the task is simply saved back as it was.
+  const restore = before => () => { saveMany([before]); toast('Undone'); };
   function toggle(id){
     const t = tasks.find(x => x.id === id); if (!t) return;
     const done = !t.done;
     saveMany([{...t, done, status: done ? 'done' : 'todo', doneAt: done ? Date.now() : null}]);
-    if (done) toast('Marked “'+short(t.name)+'” as done');
+    toast(done ? 'Marked “'+short(t.name)+'” as done' : 'Marked “'+short(t.name)+'” as not done', restore(t));
   }
   function setStatus(id, status){
     const t = tasks.find(x => x.id === id); if (!t || statusOf(t) === status) return render();
     const done = status === 'done';
     saveMany([{...t, status, done, doneAt: done ? (t.doneAt || Date.now()) : null}]);
-    toast('Moved “'+short(t.name)+'” to '+COLS.find(c => c[0] === status)[1]);
+    toast('Moved “'+short(t.name)+'” to '+COLS.find(c => c[0] === status)[1], restore(t));
+  }
+  // Deleting keeps a copy so Undo can put the task back exactly as it was.
+  function deleteTask(id){
+    const t = tasks.find(x => x.id === id); if (!t) return;
+    remove(id);
+    toast('Deleted “'+short(t.name)+'”', restore(t));
   }
   async function loadExamples(){ const list = samples(); await saveMany(list); toast('Added '+list.length+' example tasks'); }
   async function clearExamples(){
@@ -517,6 +525,16 @@
   const subjChip = t => { const s = subjOf(t); return s ? '<span class="chip" style="--c:'+colorOf('subjects', s)+'"><i class="dot"></i>'+esc(s)+'</span>' : ''; };
   const projTag = (t, opts) => { const p = t.projectId && projOf(t.projectId); return p && !(opts && opts.noProject) ? '<button class="ptag" data-open-project="'+p.id+'" title="Open project">'+folderSvg+esc(p.name)+'</button>' : ''; };
   const exampleTag = t => t.example ? '<span class="tag">Example</span>' : '';
+  const URL_RE = /\bhttps?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]/g;
+  const linksIn = text => [...new Set((text || '').match(URL_RE) || [])].slice(0, 6);
+  const linkLabel = u => { try { const x = new URL(u); return (x.hostname.replace(/^www\./, '') + x.pathname.replace(/\/$/, '')).slice(0, 42); } catch(e) { return u.slice(0, 42); } };
+  const noteSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg>';
+  const linkSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
+  function noteIcons(t){
+    const links = linksIn(t.notes), text = (t.notes || '').replace(URL_RE, '').trim();
+    return (text ? '<button class="note-ic" data-edit="'+t.id+'" title="'+esc(text.slice(0, 200))+'" aria-label="Notes for '+esc(t.name)+'">'+noteSvg+'</button>' : '')
+      + (links.length ? '<a class="note-ic" href="'+esc(links[0])+'" target="_blank" rel="noopener noreferrer" title="'+esc(links[0])+'" aria-label="Open link for '+esc(t.name)+'">'+linkSvg+'</a>' : '');
+  }
   const doingTag = t => !t.done && t.status === 'doing' ? '<span class="doing">In progress</span>' : '';
 
   // ---------- tasks table: one row per task, every column edited in place ----------
@@ -544,7 +562,7 @@
       + (r && grip ? gripBtn(t) : '<span></span>')
       + '<button class="check" data-toggle="'+t.id+'" aria-pressed="'+!!t.done+'" aria-label="'+(t.done ? 'Mark not done: ' : 'Mark done: ')+esc(t.name)+'">'+checkSvg+'</button>'
       + '<span class="rank"'+(r ? ' title="'+esc(r.tier[1]+' · '+r.when)+'"' : '')+'>'+(r ? i+1 : '')+'</span>'
-      + '<span class="name-cell"><span class="cell-name" data-cell="name" contenteditable="true" role="textbox" spellcheck="false" aria-label="Task name" title="'+esc(t.name)+'">'+esc(t.name)+'</span>'+exampleTag(t)+'</span>'
+      + '<span class="name-cell"><span class="cell-name" data-cell="name" contenteditable="true" role="textbox" spellcheck="false" aria-label="Task name" title="'+esc(t.name)+'">'+esc(t.name)+'</span>'+noteIcons(t)+exampleTag(t)+'</span>'
       // On wide screens the cells below are table columns; on phones they wrap as chips under the name.
       + '<div class="tt-meta">' + subjCell + projCell
       + '<label class="cell st st-'+st+'"><i class="st-dot"></i><select data-cell="status"'+lab('Status')+'>'+cols().map(([k, v]) => opt(k, v, k === st)).join('')+'</select></label>'
@@ -957,7 +975,8 @@
     else if (d.openProject) openProject(d.openProject);
     else if (d.projToggle) toggleProject(d.projToggle);
     else if (d.toggle) toggle(d.toggle);
-    else if (d.del) { const t = tasks.find(x => x.id === d.del); remove(d.del); if (t) toast('Deleted “'+short(t.name)+'”'); }
+    else if (d.del) deleteTask(d.del);
+    else if (d.undo) runUndo();
     else if (d.examples) loadExamples();
     else if (d.clearEx) clearExamples();
     else if (d.pushToggle) togglePush();
@@ -1153,6 +1172,7 @@
     $('#e-subject').value = t ? (t.subject || '') : preset && preset.subject != null ? preset.subject : (subs[0] ? subs[0].name : '');
     $('#e-subject-new').hidden = true;
     $('#e-subject-new').value = '';
+    $('#e-notes').value = t ? (t.notes || '') : ''; showNoteLinks();
     const imp = document.getElementById('eimp-' + (t ? t.importance || 'medium' : 'medium')); if (imp) imp.checked = true;
     const st = document.getElementById('estat-' + (t ? statusOf(t) : 'todo')); if (st) st.checked = true;
     // Without the projects migration there is nowhere to save a project or the Doing status.
@@ -1172,10 +1192,16 @@
   function editDelete(step){
     const box = $('#editDelete');
     if (step === 'ask') box.innerHTML = '<span>Delete this task?</span><button class="btn danger" type="button" data-edit-del="yes">Delete</button><button class="btn ghost" type="button" data-edit-del="reset">Keep</button>';
-    else if (step === 'yes') { const t = tasks.find(x => x.id === editing); const id = editing; closeEdit(); remove(id); if (t) toast('Deleted “'+short(t.name)+'”'); }
+    else if (step === 'yes') { const id = editing; closeEdit(); deleteTask(id); }
     else box.innerHTML = '<button class="btn ghost danger-text" type="button" data-edit-del="ask">Delete task</button>';
   }
   $('#editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEdit(); });
+  function showNoteLinks(){
+    const links = linksIn($('#e-notes').value);
+    $('#e-links').innerHTML = links.map(u => '<a class="note-link" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer">'+linkSvg+esc(linkLabel(u))+'</a>').join('');
+    $('#e-links').hidden = !links.length;
+  }
+  $('#e-notes').addEventListener('input', showNoteLinks);
   $('#e-project').addEventListener('change', syncSubjectField);
   ['e-subject'].forEach(id => $('#'+id).addEventListener('change', e => {
     const nw = $('#'+id+'-new'); nw.hidden = e.target.value !== '__new'; if (!nw.hidden) nw.focus();
@@ -1206,7 +1232,7 @@
     const base = t || {id:uid(), createdAt:Date.now()};
     // A personal task must belong to you; a project task keeps whoever created it.
     const userId = projectId ? (base.userId || myId()) : myId();
-    saveMany([{...base, userId, projectId, name, subject:s.name || '', category:base.category || '', due, importance, status, done, doneAt: done ? (base.doneAt || Date.now()) : null}]);
+    saveMany([{...base, userId, projectId, name, subject:s.name || '', category:base.category || '', notes:$('#e-notes').value.trim(), due, importance, status, done, doneAt: done ? (base.doneAt || Date.now()) : null}]);
     closeEdit();
     const p = projectId && projOf(projectId);
     toast(t ? 'Saved changes to “'+short(name)+'”' : 'Added “'+short(name)+'”' + (p ? ' to '+short(p.name) : ''));
@@ -1320,8 +1346,22 @@
     if (id) openProject(id);
   });
 
-  let toastTimer;
-  function toast(msg){ const el = $('#toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => el.hidden = true, 2800); }
+  // toast(message, undo?): with an undo function the message gets an Undo button and stays a little longer.
+  let toastTimer, undoFn = null;
+  function toast(msg, undo){
+    const el = $('#toast');
+    undoFn = undo || null;
+    el.innerHTML = '<span>'+esc(msg)+'</span>' + (undo ? '<button type="button" data-undo="1">Undo</button>' : '');
+    el.hidden = false; clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.hidden = true; undoFn = null; }, undo ? 6000 : 2800);
+  }
+  function runUndo(){ const f = undoFn; undoFn = null; $('#toast').hidden = true; if (f) f(); }
+  // Ctrl+Z / Cmd+Z undoes the last change too, unless you're typing somewhere.
+  document.addEventListener('keydown', e => {
+    if (!undoFn || e.key.toLowerCase() !== 'z' || !(e.ctrlKey || e.metaKey) || e.shiftKey) return;
+    const a = e.target; if (a && a.matches && (a.matches('input, textarea, select') || a.isContentEditable)) return;
+    e.preventDefault(); runUndo();
+  });
 
   // ---------- theme ----------
   const THEME = 'workload.theme.v1', root = document.documentElement, hostTheme = root.getAttribute('data-theme');

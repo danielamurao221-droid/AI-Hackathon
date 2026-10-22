@@ -235,7 +235,7 @@ form{display:flex;flex-direction:column;gap:14px}
 .t-soon{--tier:var(--info)}
 .t-later{--tier:var(--faint)}
 
-.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:7px;font-weight:500;font-size:15px;box-shadow:var(--lift);z-index:20;max-width:calc(100% - 32px)}
+.toast{display:flex;align-items:center;gap:14px;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:7px;font-weight:500;font-size:15px;box-shadow:var(--lift);z-index:20;max-width:calc(100% - 32px)}
 .muted{color:var(--muted)}
 
 /* ---------- edit dialog ---------- */
@@ -361,6 +361,18 @@ form{display:flex;flex-direction:column;gap:14px}
 .proj-group{margin-top:28px;max-width:640px}
 .tt.no-proj .proj-col{display:none}
 .tt.no-proj .tt-row{grid-template-columns:22px 24px 26px minmax(200px,2.4fr) minmax(130px,1fr) 132px 112px 100px 32px;min-width:780px}
+
+/* ---------- undo, notes and links ---------- */
+.toast button{border:0;background:none;color:var(--bg);font-weight:700;padding:2px 4px;margin:-2px -4px -2px 0;text-decoration:underline;text-underline-offset:3px}
+.field textarea{border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:9px 11px;width:100%;min-width:0;resize:vertical;font:inherit;color:inherit;line-height:1.5}
+.field textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.note-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.note-link{display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:3px 10px;border:1px solid var(--line);border-radius:999px;font-size:13px;color:var(--accent);text-decoration:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.note-link:hover{border-color:var(--accent)}
+.note-link svg{width:14px;height:14px;flex:none}
+.note-ic{flex:none;display:grid;place-items:center;width:26px;height:26px;border:0;background:none;border-radius:6px;color:var(--faint);padding:0}
+.note-ic:hover{color:var(--accent);background:var(--surface-2)}
+.note-ic svg{width:15px;height:15px}
 
 /* ---------- tasks table: every cell is edited in place ---------- */
 .tt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}

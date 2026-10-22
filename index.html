@@ -307,6 +307,10 @@
         <input id="e-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
       </div>
       <div class="field"><label for="e-due">Due date</label><input id="e-due" type="date"></div>
+      <div class="field"><label for="e-notes">Notes <span class="opt">(optional)</span></label>
+        <textarea id="e-notes" rows="3" maxlength="4000" placeholder="Instructions, page numbers, or paste a link to the brief"></textarea>
+        <div class="note-links" id="e-links" hidden></div>
+      </div>
       <div class="field"><span class="lab" id="eimp-lab">Importance</span>
         <div class="seg" role="radiogroup" aria-labelledby="eimp-lab">
           <input type="radio" name="eimp" id="eimp-low" value="low"><label for="eimp-low">Low</label>
