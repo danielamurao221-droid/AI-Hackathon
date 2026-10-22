@@ -117,6 +117,18 @@
           <button class="btn primary" data-new-task="1">Add task</button>
         </div>
       </div>
+      <div class="tfilters" role="search">
+        <label class="fsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="fq" type="search" placeholder="Search tasks, notes, projects" aria-label="Search tasks" autocomplete="off"></label>
+        <div class="fchips">
+          <label class="fchip"><select id="f-subject" data-filter-key="subject" aria-label="Filter by subject"></select></label>
+          <label class="fchip"><select id="f-status" data-filter-key="status" aria-label="Filter by status"></select></label>
+          <label class="fchip"><select id="f-imp" data-filter-key="imp" aria-label="Filter by importance"></select></label>
+          <label class="fchip"><select id="f-due" data-filter-key="due" aria-label="Filter by due date"></select></label>
+          <label class="fchip"><select id="f-who" data-filter-key="who" aria-label="Filter by who's doing it"></select></label>
+          <label class="fchip"><select id="f-sort" data-filter-key="sort" aria-label="Sort"></select></label>
+          <button class="link" id="fClear" data-filter-clear="1" hidden>Clear filters</button>
+        </div>
+      </div>
       <div class="toolbar">
         <p class="order-hint" id="taskHint"></p>
         <button class="link" id="prioReset" data-order-mode="prio:auto" hidden>Reset to automatic</button>
@@ -128,7 +140,7 @@
             <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
           </form>
           <div class="tt-scroll">
-            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span class="who-col">Who</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
             <div class="tt-list" id="taskList" data-reorder="prio"></div>
             <div class="tt-done" hidden>
               <button type="button" class="tt-done-toggle" data-done-toggle="tasks" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
@@ -167,7 +179,7 @@
             <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
           </form>
           <div class="tt-scroll">
-            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span class="who-col">Who</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
             <div class="tt-list"></div>
             <div class="tt-done" hidden>
               <button type="button" class="tt-done-toggle" data-done-toggle="subject" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
@@ -200,7 +212,7 @@
             <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
           </form>
           <div class="tt-scroll">
-            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span class="who-col">Who</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
             <div class="tt-list"></div>
             <div class="tt-done" hidden>
               <button type="button" class="tt-done-toggle" data-done-toggle="project" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
@@ -302,11 +314,15 @@
         <select id="e-project"></select>
         <p class="field-hint" id="e-proj-note" hidden>Project tasks are shared with the group and use the subject you filed the project under.</p>
       </div>
+      <div class="field" id="e-who-field" hidden><label for="e-who">Assigned to</label><select id="e-who"></select></div>
       <div class="field" id="e-subject-field"><label for="e-subject">Subject <span class="opt">(optional)</span></label>
         <select id="e-subject"></select>
         <input id="e-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
       </div>
-      <div class="field"><label for="e-due">Due date</label><input id="e-due" type="date"></div>
+      <div class="field-pair">
+        <div class="field"><label for="e-due">Due date</label><input id="e-due" type="date"></div>
+        <div class="field"><label for="e-repeat">Repeat</label><select id="e-repeat"></select></div>
+      </div>
       <div class="field"><label for="e-notes">Notes <span class="opt">(optional)</span></label>
         <textarea id="e-notes" rows="3" maxlength="4000" placeholder="Instructions, page numbers, or paste a link to the brief"></textarea>
         <div class="note-links" id="e-links" hidden></div>

@@ -356,11 +356,43 @@ form{display:flex;flex-direction:column;gap:14px}
 .proj-chips .cell.is-empty{background:none;border:1px dashed var(--line)}
 .proj-chips select{width:auto;field-sizing:content;max-width:50vw}
 .proj-progress{gap:8px}
-.proj-progress .bar{width:56px}
+.proj-progress .bar{width:56px;background:var(--line)}
 .proj-done-note{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;margin-bottom:20px;border-radius:8px;background:var(--ok-soft)}
 .proj-group{margin-top:28px;max-width:640px}
+.tt.no-who .who-col{display:none}
+.tt.no-who .tt-row{grid-template-columns:22px 24px 26px minmax(180px,2fr) minmax(120px,1fr) minmax(120px,1fr) 132px 112px 100px 32px;min-width:900px}
+.tt.no-who .tt-done{min-width:900px}
 .tt.no-proj .proj-col{display:none}
 .tt.no-proj .tt-row{grid-template-columns:22px 24px 26px minmax(200px,2.4fr) minmax(130px,1fr) 132px 112px 100px 32px;min-width:780px}
+.tt.no-proj .tt-done{min-width:780px}
+
+/* ---------- who's doing what, repeating tasks ---------- */
+.who-av{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:9px;font-weight:700;background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
+.who-av.me{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.who-av.none{border-style:dashed;background:none}
+.is-empty-static{color:var(--faint)}
+.who-badge{flex:none;display:grid;margin-top:3px}
+.rep-ic{flex:none;display:grid;place-items:center;width:22px;height:22px;color:var(--faint)}
+.rep-ic svg{width:14px;height:14px}
+.t-name .rep-ic{display:inline-grid;vertical-align:-5px;margin-left:4px}
+.m-count{font-size:13px;color:var(--muted);margin-right:8px}
+.field-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+
+/* ---------- search, filter and sort ---------- */
+.tfilters{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin:-6px 0 12px}
+.fsearch{display:flex;align-items:center;gap:8px;flex:1 1 240px;max-width:360px;height:36px;padding:0 12px;border:1px solid var(--line);border-radius:7px;background:var(--surface)}
+.fsearch:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.fsearch svg{width:16px;height:16px;flex:none;color:var(--faint)}
+.fsearch input{flex:1;min-width:0;border:0;background:none;padding:0;font-size:15px;outline:none}
+.fchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.fchip{display:flex;align-items:center;height:32px;padding:0 10px;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:14px;color:var(--muted);cursor:pointer}
+.fchip:hover{border-color:var(--faint);color:var(--fg)}
+.fchip.on{border-color:var(--accent);color:var(--fg);background:var(--accent-soft)}
+.fchip:has(:focus-visible){outline:2px solid var(--accent);outline-offset:1px}
+.fchip select{appearance:none;-webkit-appearance:none;border:0;background:none;padding:0;font-size:14px;color:inherit;cursor:pointer;field-sizing:content;max-width:180px}
+.fchip select:focus{outline:none}
+.fchip select option{color:var(--fg);background:var(--surface)}
+#fClear{font-size:14px;margin-left:4px}
 
 /* ---------- undo, notes and links ---------- */
 .toast button{border:0;background:none;color:var(--bg);font-weight:700;padding:2px 4px;margin:-2px -4px -2px 0;text-decoration:underline;text-underline-offset:3px}
@@ -383,7 +415,7 @@ form{display:flex;flex-direction:column;gap:14px}
 .tt-add:focus-within{background:var(--bg)}
 .tt-add:focus-within svg{color:var(--accent)}
 .tt-scroll{overflow-x:auto}
-.tt-row{display:grid;grid-template-columns:22px 24px 26px minmax(180px,2fr) minmax(120px,1fr) minmax(120px,1fr) 132px 112px 100px 32px;gap:0 8px;align-items:center;padding:5px 10px 5px 6px;border-top:1px solid var(--line);min-width:900px;position:relative}
+.tt-row{display:grid;grid-template-columns:22px 24px 26px minmax(180px,2fr) minmax(110px,1fr) minmax(110px,1fr) minmax(104px,.8fr) 132px 112px 100px 32px;gap:0 8px;align-items:center;padding:5px 10px 5px 6px;border-top:1px solid var(--line);min-width:1010px;position:relative}
 .tt-list>.tt-row:first-child{border-top:0}
 .tt-row:not(.tt-head):hover{background:var(--bg)}
 .tt-head{padding-top:9px;padding-bottom:7px;border-top:0;border-bottom:1px solid var(--line);font-size:13px;font-weight:500;color:var(--muted)}
@@ -425,7 +457,7 @@ form{display:flex;flex-direction:column;gap:14px}
 .date-cell .over{color:var(--crit);font-weight:600}
 .date-cell .today{color:var(--warn);font-weight:600}
 .date-cell input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:0;padding:0}
-.tt-done{border-top:1px solid var(--line);min-width:900px}
+.tt-done{border-top:1px solid var(--line);min-width:1010px}
 .tt-done-toggle{display:flex;align-items:center;gap:6px;width:100%;border:0;background:none;padding:10px 14px;font-size:14px;font-weight:600;color:var(--muted);text-align:left}
 .tt-done-toggle:hover{color:var(--fg)}
 .tt-done-toggle svg{width:16px;height:16px;transition:transform .15s var(--ease)}
@@ -559,6 +591,12 @@ form{display:flex;flex-direction:column;gap:14px}
   .tt-meta .date-cell{padding:0 10px}
   .tt-row .mover{order:2;padding-left:52px}
   .tt-row.tt-head{display:none}
+  .fsearch{max-width:none;flex-basis:100%}
+  .fchips{flex-wrap:nowrap;overflow-x:auto;width:100%;padding-bottom:2px;scrollbar-width:none}
+  .fchip{flex:none}
+  .tt-meta .is-empty-static{display:none}
+  .field-pair{grid-template-columns:minmax(0,1fr)}
+  .tt-row,.tt.no-who .tt-row,.tt.no-proj .tt-row,.tt-done,.tt.no-who .tt-done,.tt.no-proj .tt-done{min-width:0}
   .app{grid-template-columns:minmax(0,1fr)}
   .side{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;z-index:10;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));flex-direction:row;gap:0;border-right:0;border-top:1px solid var(--line)}
   .side .brand,.today-card,.me-text,.side-subjects{display:none}

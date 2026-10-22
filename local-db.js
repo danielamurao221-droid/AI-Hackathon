@@ -83,7 +83,7 @@
   };
   const keys = {tasks:['id'], subjects:['user_id','id'], categories:['user_id','id'], user_settings:['user_id'], projects:['id'], project_members:['project_id','user_id'], profiles:['id']};
   const defaults = {
-    tasks: () => ({user_id:me(), project_id:null, subject:'', category:'', status:'todo', done:false, done_at:null, created_at:now(), snoozed_until:null, example:false}),
+    tasks: () => ({user_id:me(), project_id:null, subject:'', category:'', status:'todo', done:false, done_at:null, created_at:now(), snoozed_until:null, example:false, notes:'', assignee_id:null, repeat:''}),
     subjects: () => ({user_id:me(), position:0}), categories: () => ({user_id:me(), position:0}),
     user_settings: () => ({user_id:me(), remind_days:3, prio_mode:'auto', prio_order:[], task_mode:'auto', task_order:[], snoozes:{}}),
   };
@@ -108,6 +108,8 @@
       if (st.action === 'delete') {
         const gone = rows.filter(match);
         if (table === 'projects') gone.forEach(p => { if (p.owner_id === me()) cascadeProject(p.id); });
+        // Like the database trigger: someone who leaves a project no longer has tasks assigned in it.
+        if (table === 'project_members') gone.forEach(m => db.tasks.forEach(t => { if (t.project_id === m.project_id && t.assignee_id === m.user_id) t.assignee_id = null; }));
         db[table] = db[table].filter(r => !(match(r) && (table !== 'projects' || r.owner_id === me())));
         save(); return ok(null);
       }

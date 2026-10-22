@@ -110,7 +110,7 @@
       {name:'Lab report: acid–base titration', subject:'Chemistry', category:'Assignment', due:d(2), importance:'high'},
       {name:'Flashcards for unit 3 quiz', subject:'History', category:'Exam prep', due:d(1), importance:'low'},
       {name:'Midterm review sheet', subject:'Calculus', category:'Exam prep', due:d(4), importance:'high'},
-      {name:'Discussion post: Federalist No. 10', subject:'History', category:'Assignment', due:d(3), importance:'medium'},
+      {name:'Discussion post: Federalist No. 10', subject:'History', category:'Assignment', due:d(3), importance:'medium', repeat:'weekly'},
       {name:'Pre-lab questions', subject:'Chemistry', category:'Reading', due:d(5), importance:'low'},
       {name:'Essay draft: symbolism', subject:'English', category:'Assignment', due:d(9), importance:'high'},
       {name:'Vocabulary list 4', subject:'English', category:'Reading', due:d(-3), importance:'low', done:true, status:'done', doneAt:Date.now()},
@@ -125,12 +125,12 @@
       done:!!t.done, done_at: t.doneAt ? new Date(t.doneAt).toISOString() : null,
       created_at: new Date(t.createdAt || Date.now()).toISOString(), example:!!t.example, notes:(t.notes || '').slice(0, 4000)};
     // The old schema has no status or project_id columns.
-    if (v2) { row.project_id = t.projectId || null; row.status = statusOf(t); }
+    if (v2) { row.project_id = t.projectId || null; row.status = statusOf(t); row.assignee_id = t.projectId ? (t.assigneeId || null) : null; row.repeat = t.repeat || ''; }
     return row;
   }
   const fromRow = r => ({id:r.id, userId:r.user_id, projectId:r.project_id || null, name:r.name, subject:r.subject || '', category:r.category || '',
     due:r.due, importance:r.importance, status:r.status || (r.done ? 'done' : 'todo'), done:r.done,
-    doneAt: r.done_at ? Date.parse(r.done_at) : null, createdAt: Date.parse(r.created_at), notes: r.notes || '',
+    doneAt: r.done_at ? Date.parse(r.done_at) : null, createdAt: Date.parse(r.created_at), notes: r.notes || '', assigneeId: r.assignee_id || null, repeat: r.repeat || '',
     ...(r.example ? {example:true} : {})});
   async function saveTasks(list){
     if (mode !== 'db' || !session || !list.length) return;
@@ -244,7 +244,9 @@
   }
   async function removeMember(pid, who){
     const name = nameOf(who);
-    members = members.filter(m => !(m.projectId === pid && m.userId === who)); render();
+    members = members.filter(m => !(m.projectId === pid && m.userId === who));
+    tasks = tasks.map(t => t.projectId === pid && t.assigneeId === who ? {...t, assigneeId:null} : t);
+    render();
     const {error} = await sb.from('project_members').delete().eq('project_id', pid).eq('user_id', who);
     if (error) { toast('Could not remove them. Try again.'); refreshProjects(); } else toast('Removed '+name+' from the project');
   }
@@ -309,19 +311,58 @@
   function resetOrder(){ saveLists({...materialize(), prioMode:'auto'}); toast('Back to automatic ranking'); }
 
   // ---------- task actions ----------
+  // ---------- who's doing what ----------
+  // A task is yours when it's personal, or in a project and either unassigned or assigned to you.
+  const isMine = t => !t.projectId || !t.assigneeId || t.assigneeId === myId();
+  const isShared = pid => membersOf(pid).length > 1;
+  const anyShared = () => projects.some(p => isShared(p.id));
+  const whoName = id => id === myId() ? 'Me' : (names[id] || 'Former member').split(' ')[0];
+
+  // ---------- repeating tasks ----------
+  const REPEATS = [['', 'Doesn’t repeat'], ['daily', 'Every day'], ['weekdays', 'Every weekday'], ['weekly', 'Every week'], ['biweekly', 'Every 2 weeks'], ['monthly', 'Every month']];
+  const repeatLabel = r => (REPEATS.find(x => x[0] === r) || ['', ''])[1];
+  // The next due date after `due`. A late finish skips ahead, so the next one is never already overdue.
+  function nextDue(due, rule){
+    const start = parse(due), day = start.getDate();
+    const step = d => {
+      if (rule === 'daily') return addDays(d, 1);
+      if (rule === 'weekdays') { let x = addDays(d, 1); while (x.getDay() === 0 || x.getDay() === 6) x = addDays(x, 1); return x; }
+      if (rule === 'weekly') return addDays(d, 7);
+      if (rule === 'biweekly') return addDays(d, 14);
+      const last = new Date(d.getFullYear(), d.getMonth() + 2, 0).getDate(); // monthly: same day, or the month's last day
+      return new Date(d.getFullYear(), d.getMonth() + 1, Math.min(day, last));
+    };
+    let d = step(start); const t0 = today();
+    while (d < t0) d = step(d);
+    return iso(d);
+  }
+  const nextOccurrence = t => ({...t, id:uid(), due:nextDue(t.due, t.repeat), done:false, status:'todo', doneAt:null, createdAt:Date.now()});
+  // Don't make a second copy if the next one already exists (say, after un-ticking and ticking again).
+  const hasTwin = n => tasks.some(x => !x.done && x.id !== n.id && x.repeat === n.repeat && x.name === n.name && (x.projectId || null) === (n.projectId || null) && x.due === n.due);
+  const dueWords = d => { const n = daysUntil(d); return n === 0 ? 'today' : n === 1 ? 'tomorrow' : fmt(parse(d), {weekday:'short', month:'short', day:'numeric'}); };
+
   // Every change below can be undone from the message it shows: the task is simply saved back as it was.
   const restore = before => () => { saveMany([before]); toast('Undone'); };
+  // Saves a change to a task. Finishing a repeating task also creates its next one; Undo takes both back.
+  function changeTask(before, after, msg){
+    const list = [after];
+    let next = null;
+    // Uses the task as saved, so a repeat chosen in the same edit counts.
+    if (after.done && !before.done && after.repeat) { next = nextOccurrence(after); if (hasTwin(next)) next = null; else list.push(next); }
+    saveMany(list);
+    toast(msg + (next ? '. Next one is due ' + dueWords(next.due) : ''), () => { if (next) remove(next.id); saveMany([before]); toast('Undone'); });
+    return next;
+  }
   function toggle(id){
     const t = tasks.find(x => x.id === id); if (!t) return;
     const done = !t.done;
-    saveMany([{...t, done, status: done ? 'done' : 'todo', doneAt: done ? Date.now() : null}]);
-    toast(done ? 'Marked “'+short(t.name)+'” as done' : 'Marked “'+short(t.name)+'” as not done', restore(t));
+    changeTask(t, {...t, done, status: done ? 'done' : 'todo', doneAt: done ? Date.now() : null},
+      done ? 'Marked “'+short(t.name)+'” as done' : 'Marked “'+short(t.name)+'” as not done');
   }
   function setStatus(id, status){
     const t = tasks.find(x => x.id === id); if (!t || statusOf(t) === status) return render();
     const done = status === 'done';
-    saveMany([{...t, status, done, doneAt: done ? (t.doneAt || Date.now()) : null}]);
-    toast('Moved “'+short(t.name)+'” to '+COLS.find(c => c[0] === status)[1], restore(t));
+    changeTask(t, {...t, status, done, doneAt: done ? (t.doneAt || Date.now()) : null}, 'Moved “'+short(t.name)+'” to '+COLS.find(c => c[0] === status)[1]);
   }
   // Deleting keeps a copy so Undo can put the task back exactly as it was.
   function deleteTask(id){
@@ -525,6 +566,10 @@
   const subjChip = t => { const s = subjOf(t); return s ? '<span class="chip" style="--c:'+colorOf('subjects', s)+'"><i class="dot"></i>'+esc(s)+'</span>' : ''; };
   const projTag = (t, opts) => { const p = t.projectId && projOf(t.projectId); return p && !(opts && opts.noProject) ? '<button class="ptag" data-open-project="'+p.id+'" title="Open project">'+folderSvg+esc(p.name)+'</button>' : ''; };
   const exampleTag = t => t.example ? '<span class="tag">Example</span>' : '';
+  const repeatSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>';
+  const repeatIcon = t => t.repeat ? '<span class="rep-ic" title="Repeats: '+esc(repeatLabel(t.repeat).toLowerCase())+'" aria-label="Repeats '+esc(repeatLabel(t.repeat).toLowerCase())+'">'+repeatSvg+'</span>' : '';
+  const avatarFor = id => '<i class="who-av'+(id === myId() ? ' me' : '')+'">'+esc(initials(id === myId() ? displayName(session.user) : (names[id] || '?')))+'</i>';
+  const whoBadge = t => t.projectId && t.assigneeId ? '<span class="who-badge" title="Assigned to '+esc(whoName(t.assigneeId))+'">'+avatarFor(t.assigneeId)+'</span>' : '';
   const URL_RE = /\bhttps?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]/g;
   const linksIn = text => [...new Set((text || '').match(URL_RE) || [])].slice(0, 6);
   const linkLabel = u => { try { const x = new URL(u); return (x.hostname.replace(/^www\./, '') + x.pathname.replace(/\/$/, '')).slice(0, 42); } catch(e) { return u.slice(0, 42); } };
@@ -552,7 +597,7 @@
     const s = subjOf(t), st = statusOf(t), due = shortDue(t.due), mv = r ? moverHtml('prio', t) : '';
     const lab = what => ' aria-label="'+what+' for '+esc(t.name)+'"';
     const subjCell = t.projectId
-      ? '<span class="cell-static" title="Comes from the project. Change it on the project page.">'+(s ? '<i class="dot" style="--c:'+colorOf('subjects', s)+'"></i>'+esc(s) : '—')+'</span>'
+      ? '<span class="cell-static'+(s ? '' : ' is-empty-static')+'" title="Comes from the project. Change it on the project page.">'+(s ? '<i class="dot" style="--c:'+colorOf('subjects', s)+'"></i>'+esc(s) : '—')+'</span>'
       : '<label class="cell'+(s ? '' : ' is-empty')+'"><i class="dot" style="--c:'+colorOf('subjects', s)+'"></i><select data-cell="subject"'+lab('Subject')+'>'
         + opt('', 'No subject', !s) + listOf('subjects').map(x => opt(x.name, x.name, x.name === s)).join('') + opt('__new', '+ New subject…') + '</select></label>';
     const projCell = !v2 ? '<span class="cell-static proj-col">—</span>'
@@ -561,14 +606,23 @@
     return '<div class="tt-row'+(t.done ? ' is-done' : '')+(r ? ' t-'+r.tier[0] : '')+(mv ? ' has-mover' : '')+'" data-row-id="'+t.id+'" data-task="'+t.id+'">'
       + (r && grip ? gripBtn(t) : '<span></span>')
       + '<button class="check" data-toggle="'+t.id+'" aria-pressed="'+!!t.done+'" aria-label="'+(t.done ? 'Mark not done: ' : 'Mark done: ')+esc(t.name)+'">'+checkSvg+'</button>'
-      + '<span class="rank"'+(r ? ' title="'+esc(r.tier[1]+' · '+r.when)+'"' : '')+'>'+(r ? i+1 : '')+'</span>'
-      + '<span class="name-cell"><span class="cell-name" data-cell="name" contenteditable="true" role="textbox" spellcheck="false" aria-label="Task name" title="'+esc(t.name)+'">'+esc(t.name)+'</span>'+noteIcons(t)+exampleTag(t)+'</span>'
+      + '<span class="rank"'+(r ? ' title="'+esc(r.tier[1]+' · '+r.when)+'"' : '')+'>'+(r && i >= 0 ? i+1 : '')+'</span>'
+      + '<span class="name-cell"><span class="cell-name" data-cell="name" contenteditable="true" role="textbox" spellcheck="false" aria-label="Task name" title="'+esc(t.name)+'">'+esc(t.name)+'</span>'+repeatIcon(t)+noteIcons(t)+exampleTag(t)+'</span>'
       // On wide screens the cells below are table columns; on phones they wrap as chips under the name.
-      + '<div class="tt-meta">' + subjCell + projCell
+      + '<div class="tt-meta">' + subjCell + projCell + whoCell(t, lab)
       + '<label class="cell st st-'+st+'"><i class="st-dot"></i><select data-cell="status"'+lab('Status')+'>'+cols().map(([k, v]) => opt(k, v, k === st)).join('')+'</select></label>'
       + '<label class="cell imp-cell imp-'+t.importance+'">'+impBars(t.importance)+'<select data-cell="importance"'+lab('Importance')+'>'+IMPS.map(([k, v]) => opt(k, v, k === t.importance)).join('')+'</select></label>'
       + '<label class="cell date-cell"><span class="'+(t.done ? '' : due.cls)+'">'+esc(due.text)+'</span><input type="date" data-cell="due" value="'+t.due+'"'+lab('Due date')+'></label>'
       + '</div>' + editBtn(t) + mv + '</div>';
+  }
+  // Who's doing a project task: anyone in the group, or one member.
+  function whoCell(t, lab){
+    if (!t.projectId) return '<span class="cell-static who-col is-empty-static">—</span>';
+    const ms = membersOf(t.projectId);
+    return '<label class="cell who-col'+(t.assigneeId ? '' : ' is-empty')+'">'+(t.assigneeId ? avatarFor(t.assigneeId) : '<i class="who-av none"></i>')
+      + '<select data-cell="who"'+lab('Assigned to')+'>' + opt('', 'Anyone', !t.assigneeId)
+      + ms.map(m => opt(m.userId, m.userId === myId() ? 'Me' : nameOf(m.userId), m.userId === t.assigneeId)).join('')
+      + (t.assigneeId && !ms.some(m => m.userId === t.assigneeId) ? opt(t.assigneeId, 'Former member', true) : '') + '</select></label>';
   }
   // Saves one edited cell. Selects lose focus afterwards so the list can re-sort straight away.
   function editCell(el){
@@ -577,6 +631,7 @@
     if (f === 'name') { const name = v.replace(/\s+/g, ' ').trim().slice(0, 140); if (!name) { el.textContent = t.name; return toast('A task needs a name'); } if (name !== t.name) saveMany([{...t, name}]); return; }
     if (f === 'due') { if (!v) { el.value = t.due; return; } if (v !== t.due) saveMany([{...t, due:v}]); return; }
     if (f === 'importance') return saveMany([{...t, importance:v}]);
+    if (f === 'who') { saveMany([{...t, assigneeId: v || null}]); return toast(v ? 'Assigned “'+short(t.name)+'” to '+(v === myId() ? 'you' : nameOf(v)) : 'Anyone can pick up “'+short(t.name)+'”'); }
     if (f === 'status') return setStatus(t.id, v);
     if (f === 'subject') {
       if (v === '__new') { el.value = t.subject || ''; return openQuick('subject', {after: name => { const x = tasks.find(y => y.id === t.id); if (x) saveMany([{...x, subject:name}]); }}); }
@@ -594,7 +649,7 @@
     const due = dueLabel(t.due), mv = cardMover === t.id;
     return '<div class="kcard'+(t.done?' is-done':'')+(r?' t-'+r.tier[0]:'')+'" data-card-id="'+t.id+'">'
       + '<div class="kcard-top"><button class="grip" data-card-grip="'+t.id+'" title="Drag to another column, or click for move buttons" aria-expanded="'+mv+'" aria-label="Move '+esc(t.name)+' to another column">'+gripSvg+'</button>'
-      + '<span class="t-name">'+esc(t.name)+'</span>'+editBtn(t)+'</div>'
+      + '<span class="t-name">'+esc(t.name)+'</span>'+repeatIcon(t)+whoBadge(t)+editBtn(t)+'</div>'
       + '<div class="meta">'+subjChip(t)+projTag(t)
       + '<span class="date '+(t.done?'':due.cls)+'">'+esc(t.done ? 'Done' : due.text)+'</span>'
       + (r ? '<span class="tier">'+r.tier[1]+'</span>' : '') + exampleTag(t) + '</div>'
@@ -687,7 +742,7 @@
     const subs = listOf('subjects'), sel = activeSubjectId();
     const item = (id, name, color, n) => '<button class="snav" data-open-subject="'+id+'"'+(sel === id ? ' aria-current="page"' : '')+' style="--c:'+color+'">'
       + '<i class="dot"></i><span class="snav-name">'+esc(name)+'</span>'+(n ? '<span class="count">'+n+'</span>' : '')+'</button>';
-    const open = name => tasks.filter(t => !t.done && subjOf(t) === name).length;
+    const open = name => tasks.filter(t => !t.done && isMine(t) && subjOf(t) === name).length;
     const curProj = currentView() === 'project' ? currentProject : null;
     const projItems = name => projects.filter(p => !p.done && projSubject(p.id) === name).sort(projSort).map(p =>
       '<button class="snav snav-proj" data-open-project="'+p.id+'"'+(curProj === p.id ? ' aria-current="page"' : '')+'>'+folderSvg+'<span class="snav-name">'+esc(p.name)+'</span></button>').join('');
@@ -805,6 +860,7 @@
     $('#pjMembers').innerHTML = ms.map(m => {
       const n = nameOf(m.userId);
       return '<li><span class="avatar sm">'+esc(initials(n))+'</span><span class="m-name">'+esc(n)+(m.userId === myId() ? ' <span class="muted">(you)</span>' : '')+'</span>'
+        + '<span class="m-count">'+(n => n ? plural(n, 'task') : 'Nothing assigned')(tasks.filter(t => t.projectId === p.id && !t.done && t.assigneeId === m.userId).length)+'</span>'
         + '<span class="m-role">'+(m.role === 'owner' ? 'Owner' : 'Member')+'</span>'
         + (isOwner(p) && m.userId !== myId() ? '<button class="mini" data-remove-member="'+m.userId+'" aria-label="Remove '+esc(n)+'">Remove</button>' : '') + '</li>';
     }).join('');
@@ -818,14 +874,15 @@
   }
 
   // Fills one of the task tables (Tasks page, a subject, a project): ranked active rows, then a collapsible Done list.
-  function fillTable(key, active, done, empty, grip){
+  function fillTable(key, active, done, empty, grip, numbered = true){
     const box = document.querySelector('[data-tt="'+key+'"]'), list = box.querySelector('.tt-list'), dl = box.querySelector('.tt-done-list');
     // Don't rebuild a table under someone who is typing in a cell or has a dropdown open.
     const a = document.activeElement;
     if (a && box.contains(a) && a.closest('.tt-list, .tt-done-list') && a.matches('input, select, [contenteditable]')) { tablePending = true; return; }
     box.querySelector('.tt-head').hidden = !active.length;
     box.classList.toggle('no-proj', !v2 || !projects.length);
-    list.innerHTML = active.length ? active.map((r, i) => ttRowHtml(r.t, r, i, grip)).join('') : empty;
+    box.classList.toggle('no-who', !v2 || (key === 'project' ? !isShared(currentProject) : !anyShared()));
+    list.innerHTML = active.length ? active.map((r, i) => ttRowHtml(r.t, r, numbered ? i : -1, grip)).join('') : empty;
     box.querySelector('.tt-done').hidden = !done.length;
     box.querySelector('.tt-done-count').textContent = done.length;
     box.querySelector('[data-done-toggle]').setAttribute('aria-expanded', doneOpen[key]);
@@ -836,19 +893,75 @@
   const rankedWhere = keep => prioList().filter(r => keep(r.t));
   const doneWhere = keep => tasks.filter(t => t.done && keep(t)).sort(cmpDone);
 
+  // ---------- search, filter and sort (Tasks page) ----------
+  // Filters last for this visit; the sort order is remembered on this device.
+  const SORT = 'pacer.sort.v1';
+  let filt = {q:'', subject:'', status:'', imp:'', due:'', who:'', sort: lsGet(SORT) || 'priority'};
+  const filtering = () => !!(filt.q || filt.subject || filt.status || filt.imp || filt.due || filt.who);
+  function passes(t, r){
+    const q = filt.q.trim().toLowerCase();
+    if (q) { const p = t.projectId && projOf(t.projectId); if (![t.name, t.notes, subjOf(t), p && p.name].some(x => x && x.toLowerCase().includes(q))) return false; }
+    if (filt.subject && (filt.subject === '__none' ? subjOf(t) !== '' : subjOf(t) !== filt.subject)) return false;
+    if (filt.status && !t.done && statusOf(t) !== filt.status) return false;
+    if (filt.imp && t.importance !== filt.imp) return false;
+    if (filt.who === 'mine' && !isMine(t)) return false;
+    if (filt.who === 'me' && t.assigneeId !== myId()) return false;
+    if (filt.who === 'open' && !(t.projectId && !t.assigneeId)) return false;
+    if (filt.due && !t.done) { const n = r ? r.n : daysUntil(t.due);
+      if (filt.due === 'over' ? n >= 0 : filt.due === 'today' ? n !== 0 : filt.due === 'week' ? (n < 0 || n > 7) : n <= 7) return false; }
+    return true;
+  }
+  const SORTERS = {
+    due: (a,b) => a.t.due.localeCompare(b.t.due) || b.score - a.score,
+    name: (a,b) => a.t.name.localeCompare(b.t.name),
+    newest: (a,b) => (b.t.createdAt||0) - (a.t.createdAt||0),
+  };
+  function filterControls(){
+    const set = (el, html, v) => { if (document.activeElement === el) return; el.innerHTML = html; el.value = v; el.closest('.fchip').classList.toggle('on', !!v && v !== 'priority'); };
+    const subs = listOf('subjects');
+    set($('#f-subject'), opt('', 'All subjects') + subs.map(x => opt(x.name, x.name)).join('') + opt('__none', 'No subject'), filt.subject);
+    set($('#f-status'), opt('', 'Any status') + opt('todo', 'Not started') + (v2 ? opt('doing', 'In progress') : ''), filt.status);
+    set($('#f-imp'), opt('', 'Any importance') + IMPS.map(([k, v]) => opt(k, v + ' importance')).join(''), filt.imp);
+    set($('#f-due'), opt('', 'Any due date') + opt('over', 'Overdue') + opt('today', 'Due today') + opt('week', 'Next 7 days') + opt('later', 'Later'), filt.due);
+    set($('#f-who'), opt('', 'Everyone’s tasks') + opt('mine', 'My tasks') + opt('me', 'Assigned to me') + opt('open', 'Unassigned'), filt.who);
+    set($('#f-sort'), opt('priority', 'Sort: Priority') + opt('due', 'Sort: Due date') + opt('name', 'Sort: Name') + opt('newest', 'Sort: Newest'), filt.sort);
+    $('#f-who').closest('.fchip').hidden = !anyShared();
+    if (document.activeElement !== $('#fq')) $('#fq').value = filt.q;
+    $('#fClear').hidden = !filtering();
+  }
+  document.addEventListener('input', e => { if (e.target.id === 'fq') { filt.q = e.target.value; render(); } });
+  document.addEventListener('change', e => {
+    const k = e.target.dataset && e.target.dataset.filterKey; if (!k) return;
+    filt[k] = e.target.value;
+    if (k === 'sort') lsSet(SORT, filt.sort);
+    e.target.blur(); render();
+  });
+
   // ---------- tasks page: one ranked to-do list, or a board ----------
   function renderTasks(ranked, loading, none){
-    const done = tasks.filter(t => t.done).sort(cmpDone);
-    $('#taskSub').textContent = loading ? 'Loading your tasks…' : ranked.length + ' to do · ' + done.length + ' done';
+    const allDone = tasks.filter(t => t.done).sort(cmpDone);
+    filterControls();
+    // Search and filters narrow both the list and the board; the sort only changes the order.
+    let shown = ranked.filter(r => passes(r.t, r));
+    if (filt.sort !== 'priority') shown = shown.slice().sort(SORTERS[filt.sort]);
+    const done = filtering() ? allDone.filter(t => passes(t, null)) : allDone;
+    const narrowed = filtering();
+    $('#taskSub').textContent = loading ? 'Loading your tasks…'
+      : narrowed ? 'Showing ' + shown.length + ' of ' + plural(ranked.length, 'task') + ' to do'
+      : ranked.length + ' to do · ' + allDone.length + ' done';
     document.querySelectorAll('[data-layout]').forEach(b => b.setAttribute('aria-pressed', b.dataset.layout === layout));
     $('#listView').hidden = layout !== 'list'; $('#board').hidden = layout !== 'board';
-    const custom = pref('prioMode','auto') === 'custom';
-    $('#prioReset').hidden = layout === 'board' || !custom;
-    $('#taskHint').textContent = layout === 'board' ? 'Drag cards between columns' : custom ? 'Your order ·' : 'Auto-sorted by priority';
-    $('#board').innerHTML = loading ? '' : boardHtml(ranked, done);
+    // Your own order only applies to the full, priority-sorted list, so dragging is off while filtering or sorting differently.
+    const custom = pref('prioMode','auto') === 'custom', canDrag = !narrowed && filt.sort === 'priority';
+    $('#prioReset').hidden = layout === 'board' || !custom || !canDrag;
+    $('#taskHint').textContent = layout === 'board' ? 'Drag cards between columns'
+      : !canDrag ? (filt.sort !== 'priority' ? 'Sorted by ' + {due:'due date', name:'name', newest:'newest first'}[filt.sort] : 'Filtered, in priority order')
+      : custom ? 'Your order ·' : 'Auto-sorted by priority';
+    $('#board').innerHTML = loading ? '' : boardHtml(shown, done);
     if (loading) { $('#taskList').innerHTML = '<p class="muted pad">Loading…</p>'; $('[data-tt="tasks"] .tt-head').hidden = true; return; }
-    fillTable('tasks', ranked, done, none ? emptyHtml('No tasks yet', 'Type one above, or load an example week to explore.', true)
-      : '<div class="empty"><strong>All caught up</strong><span>Nothing left to do. Nice work.</span></div>', true);
+    fillTable('tasks', shown, done, none ? emptyHtml('No tasks yet', 'Type one above, or load an example week to explore.', true)
+      : narrowed ? '<div class="empty"><strong>No matching tasks</strong><span>Try a different search, or <button class="link" data-filter-clear="1">clear the filters</button>.</span></div>'
+      : '<div class="empty"><strong>All caught up</strong><span>Nothing left to do. Nice work.</span></div>', canDrag, filt.sort === 'priority');
   }
 
   // ---------- dashboard: today, the next 7 days, and projects ----------
@@ -857,16 +970,18 @@
     const when = n < -1 ? 'Overdue by '+(-n)+' days' : n === -1 ? 'Overdue by 1 day' : n === 0 ? 'Due today' : n === 1 ? 'Due tomorrow' : 'Due '+fmt(parse(t.due), {weekday:'short', month:'short', day:'numeric'});
     return '<div class="row" data-row-id="'+t.id+'">'
       + '<button class="check" data-toggle="'+t.id+'" aria-pressed="false" aria-label="Mark done: '+esc(t.name)+'">'+checkSvg+'</button>'
-      + '<div class="t-main"><span class="t-name">'+esc(t.name)+'</span><div class="meta">'+subjChip(t)+projTag(t)
+      + '<div class="t-main"><span class="t-name">'+esc(t.name)+repeatIcon(t)+'</span><div class="meta">'+subjChip(t)+projTag(t)
       + '<span class="date '+(n < 0 ? 'over' : n === 0 ? 'today' : '')+'">'+esc(when)+'</span>'+doingTag(t)+'</div></div></div>';
   }
-  function renderDashboard(ranked, loading, none){
+  function renderDashboard(all, loading, none){
+    // Tasks a groupmate has taken on aren't on your plate.
+    const ranked = all.filter(r => isMine(r.t));
     const t0 = today(), [mon] = weekBounds(), hour = new Date().getHours();
     const first = session ? displayName(session.user).split(' ')[0] : '';
     $('#dashHello').textContent = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (first ? ', ' + first : '');
     const over = ranked.filter(r => r.n < 0), dueToday = ranked.filter(r => r.n === 0);
     const week = ranked.filter(r => r.n >= 1 && r.n <= 7);
-    const doneWeek = tasks.filter(t => t.done && t.doneAt && t.doneAt >= mon.getTime()).length;
+    const doneWeek = tasks.filter(t => t.done && isMine(t) && t.doneAt && t.doneAt >= mon.getTime()).length;
     const stat = (lab, num, note, cls) => '<div class="card stat '+cls+'"><span class="label">'+lab+'</span><span class="num">'+(loading ? '–' : num)+'</span><span class="note">'+note+'</span></div>';
     $('#stats').innerHTML =
       stat('Overdue', over.length, over.length ? 'Past due' : 'Nothing late', over.length ? 'is-crit' : '') +
@@ -922,7 +1037,7 @@
     $('#sideWeek').textContent = 'Week ' + isoWeek(t0) + ' of ' + t0.getFullYear();
 
     const active = tasks.filter(t => !t.done);
-    $('#navCount').textContent = active.length;
+    $('#navCount').textContent = active.filter(isMine).length;
     const loading = mode === 'loading' || mode === 'db-wait';
     const none = !loading && tasks.length === 0;
 
@@ -981,6 +1096,7 @@
     else if (d.clearEx) clearExamples();
     else if (d.pushToggle) togglePush();
     else if (d.emailToggle) toggleEmail();
+    else if (d.filterClear) { filt = {...filt, q:'', subject:'', status:'', imp:'', due:'', who:''}; render(); }
     else if (d.doneToggle) { doneOpen[d.doneToggle] = !doneOpen[d.doneToggle]; render(); }
     else if (d.layout) { layout = d.layout; lsSet(LAYOUT, layout); mover = null; cardMover = null; render(); }
     else if (d.pick) { picking = picking && picking.id === id && picking.kind === kind ? null : {kind, id}; confirming = null; render(); }
@@ -1156,8 +1272,12 @@
   // ---------- task dialog (new and edit) ----------
   let editing = null, editReturn = null;
   function syncSubjectField(){
-    const inProj = !!$('#e-project').value;
+    const pid = $('#e-project').value, inProj = !!pid;
     $('#e-subject-field').hidden = inProj; $('#e-proj-note').hidden = !inProj;
+    // Assigning only makes sense in a project with more than one member.
+    const sel = $('#e-who'), keep = sel.value, ms = inProj ? membersOf(pid) : [];
+    sel.innerHTML = opt('', 'Anyone in the group', !keep) + ms.map(m => opt(m.userId, m.userId === myId() ? 'Me' : nameOf(m.userId), m.userId === keep)).join('');
+    $('#e-who-field').hidden = ms.length < 2;
   }
   function openTask(id, preset){
     const t = id ? tasks.find(x => x.id === id) : null; if (id && !t) return;
@@ -1173,6 +1293,8 @@
     $('#e-subject-new').hidden = true;
     $('#e-subject-new').value = '';
     $('#e-notes').value = t ? (t.notes || '') : ''; showNoteLinks();
+    $('#e-repeat').innerHTML = REPEATS.map(([k, v]) => opt(k, v, false)).join(''); $('#e-repeat').value = t ? (t.repeat || '') : '';
+    $('#e-who').innerHTML = opt(t && t.assigneeId || '', '', true);
     const imp = document.getElementById('eimp-' + (t ? t.importance || 'medium' : 'medium')); if (imp) imp.checked = true;
     const st = document.getElementById('estat-' + (t ? statusOf(t) : 'todo')); if (st) st.checked = true;
     // Without the projects migration there is nowhere to save a project or the Doing status.
@@ -1232,8 +1354,12 @@
     const base = t || {id:uid(), createdAt:Date.now()};
     // A personal task must belong to you; a project task keeps whoever created it.
     const userId = projectId ? (base.userId || myId()) : myId();
-    saveMany([{...base, userId, projectId, name, subject:s.name || '', category:base.category || '', notes:$('#e-notes').value.trim(), due, importance, status, done, doneAt: done ? (base.doneAt || Date.now()) : null}]);
+    const after = {...base, userId, projectId, name, subject:s.name || '', category:base.category || '', notes:$('#e-notes').value.trim(), due, importance, status, done,
+      doneAt: done ? (base.doneAt || Date.now()) : null, assigneeId: projectId ? ($('#e-who').value || null) : null, repeat: $('#e-repeat').value};
     closeEdit();
+    // Finishing a repeating task from here creates the next one, like ticking it off does.
+    if (t && done && !t.done) return changeTask(t, after, 'Saved and marked “'+short(name)+'” as done');
+    saveMany([after]);
     const p = projectId && projOf(projectId);
     toast(t ? 'Saved changes to “'+short(name)+'”' : 'Added “'+short(name)+'”' + (p ? ' to '+short(p.name) : ''));
   });

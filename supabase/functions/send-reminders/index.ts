@@ -19,7 +19,7 @@ const todayIso = () => new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format
 const daysBetween = (from: string, to: string) => Math.round((Date.parse(to + "T00:00:00Z") - Date.parse(from + "T00:00:00Z")) / 864e5);
 const whenText = (n: number) => n < -1 ? `${-n} days overdue` : n === -1 ? "overdue since yesterday" : n === 0 ? "due today" : n === 1 ? "due tomorrow" : `due in ${n} days`;
 
-type Task = { id: string; user_id: string; project_id: string | null; name: string; due: string; importance: string; done: boolean };
+type Task = { id: string; user_id: string; project_id: string | null; assignee_id: string | null; name: string; due: string; importance: string; done: boolean };
 
 function summary(slot: string, open: Task[], today: string) {
   const ranked = open.map(t => { const n = daysBetween(today, t.due); return { t, n, score: urgency(n) + (IMP[t.importance] ?? 15) }; })
@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
   const projectIds = [...new Set((members ?? []).map(m => m.project_id))];
   const { data: personal } = await db.from("tasks").select("id, user_id, project_id, name, due, importance, done").eq("done", false).is("project_id", null).in("user_id", ids);
   const { data: shared } = projectIds.length
-    ? await db.from("tasks").select("id, user_id, project_id, name, due, importance, done").eq("done", false).in("project_id", projectIds)
+    ? await db.from("tasks").select("id, user_id, project_id, assignee_id, name, due, importance, done").eq("done", false).in("project_id", projectIds)
     : { data: [] as Task[] };
 
   const { data: subs } = await db.from("push_subscriptions").select("id, user_id, endpoint, p256dh, auth").in("user_id", ids);
@@ -77,7 +77,8 @@ Deno.serve(async (req) => {
   const result = { slot, today, users: 0, pushes: 0, emails: 0, removedDevices: 0, failed: 0, preview: [] as unknown[] };
   for (const p of prefs) {
     const mine = new Set((members ?? []).filter(m => m.user_id === p.user_id).map(m => m.project_id));
-    const open = [...(personal ?? []).filter(t => t.user_id === p.user_id), ...(shared ?? []).filter(t => mine.has(t.project_id!))] as Task[];
+    // Project tasks a groupmate has taken on aren't this student's to do.
+    const open = [...(personal ?? []).filter(t => t.user_id === p.user_id), ...(shared ?? []).filter(t => mine.has(t.project_id!) && (!t.assignee_id || t.assignee_id === p.user_id))] as Task[];
     if (!open.length) continue; // nothing to nag about
     const s = summary(slot, open, today);
     result.users++;
