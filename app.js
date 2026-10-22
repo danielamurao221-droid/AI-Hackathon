@@ -1049,14 +1049,38 @@
     const card = g.closest('.kcard'), body = card && card.parentElement; if (!body) return;
     e.preventDefault();
     try { g.setPointerCapture(e.pointerId); } catch(err) {}
-    bdrag = {card, id:g.dataset.cardGrip, from:body.dataset.colBody, startX:e.clientX, startY:e.clientY, moved:false};
+    const r = card.getBoundingClientRect();
+    bdrag = {card, id:g.dataset.cardGrip, from:body.dataset.colBody, startX:e.clientX, startY:e.clientY, moved:false,
+      dx:e.clientX - r.left, dy:e.clientY - r.top, w:r.width, ghost:null, x:e.clientX, y:e.clientY, raf:0};
   });
+  // While a card is dragged, a lifted copy (the ghost) follows the pointer and the card itself stays in the board,
+  // faded, as a placeholder showing where it will land.
+  const tilt = () => matchMedia('(prefers-reduced-motion: reduce)').matches ? '' : ' rotate(2deg)';
+  function placeGhost(){
+    const d = bdrag; if (!d || !d.ghost) return;
+    d.raf = 0;
+    d.ghost.style.transform = 'translate3d('+(d.x - d.dx)+'px,'+(d.y - d.dy)+'px,0)' + tilt();
+  }
+  function startGhost(d){
+    const gh = d.card.cloneNode(true);
+    gh.classList.add('kcard-ghost'); gh.classList.remove('dragging');
+    gh.setAttribute('aria-hidden', 'true');
+    gh.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+    gh.querySelectorAll('.mover').forEach(n => n.remove());
+    gh.style.width = d.w + 'px';
+    document.body.appendChild(gh);
+    d.ghost = gh; placeGhost();
+    d.card.closest('.col').classList.add('drag-from');
+  }
   document.addEventListener('pointermove', e => {
     if (!bdrag) return;
     if (!bdrag.moved) {
       if (Math.hypot(e.clientX - bdrag.startX, e.clientY - bdrag.startY) < 5) return;
       bdrag.moved = true; bdrag.card.classList.add('dragging'); $('#board').classList.add('is-sorting');
+      startGhost(bdrag);
     }
+    bdrag.x = e.clientX; bdrag.y = e.clientY;
+    if (!bdrag.raf) bdrag.raf = requestAnimationFrame(placeGhost);
     const under = document.elementFromPoint(e.clientX, e.clientY), col = under && under.closest('.col');
     const body = col && col.querySelector('[data-col-body]');
     if (body) {
@@ -1071,8 +1095,10 @@
   function endBoardDrag(){
     if (!bdrag) return;
     const d = bdrag; bdrag = null;
+    if (d.raf) cancelAnimationFrame(d.raf);
+    if (d.ghost) d.ghost.remove();
     d.card.classList.remove('dragging'); $('#board').classList.remove('is-sorting');
-    document.querySelectorAll('.col.drop').forEach(c => c.classList.remove('drop'));
+    document.querySelectorAll('.col.drop, .col.drag-from').forEach(c => c.classList.remove('drop', 'drag-from'));
     if (!d.moved) return;
     justDragged = true; setTimeout(() => { justDragged = false; }, 0);
     const to = d.card.parentElement && d.card.parentElement.dataset.colBody;

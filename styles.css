@@ -384,7 +384,8 @@ form{display:flex;flex-direction:column;gap:14px}
 
 .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
 .col{background:var(--surface-2);border:1px solid transparent;border-radius:var(--r);padding:12px;min-width:0}
-.col.drop{border-color:var(--accent)}
+.col.drop{border:1px dashed var(--accent);background:color-mix(in srgb,var(--accent) 7%,var(--surface-2))}
+.col.drag-from:not(.drop){border:1px dashed var(--line)}
 .col-head{display:flex;align-items:baseline;gap:8px;padding:2px 4px 10px}
 .col-head h2{font-family:var(--f-display);font-size:20px;font-weight:500;margin:0}
 .col-count{color:var(--muted);font-size:14px}
@@ -399,7 +400,9 @@ form{display:flex;flex-direction:column;gap:14px}
 .kcard .tier{font-size:13px}
 .kcard .mover{padding-left:30px}
 .kcard.is-done .t-name{color:var(--faint);text-decoration:line-through;text-decoration-color:var(--faint)}
-.kcard.dragging{pointer-events:none}
+.kcard.dragging{pointer-events:none;box-shadow:none;background:var(--surface);opacity:.4;outline:1px dashed var(--faint);outline-offset:-1px}
+/* The lifted copy that follows the pointer while a card is dragged. */
+.kcard-ghost{position:fixed;left:0;top:0;z-index:60;margin:0;pointer-events:none;box-shadow:var(--lift);opacity:.95;will-change:transform;border-color:var(--faint)}
 
 /* ---------- sidebar: subjects (level 1) ---------- */
 .nav .nav-mobile{display:none}
