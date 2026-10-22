@@ -4,24 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Pacer</title>
+  <meta name="theme-color" content="#4d6b3f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Pacer">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400&family=Source+Sans+3:wght@400..700&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="auth" id="auth" hidden>
-  <div class="auth-side">
+  <div class="auth-intro">
     <div class="brand"><svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect class="lg-bg" width="32" height="32" rx="9"/><path class="lg-p" fill-rule="evenodd" d="M11 8h7a6 6 0 0 1 0 12h-3v4h-4zM15 12v4h3a2 2 0 0 0 0-4z"/></svg><span class="brand-text"><b>Pacer</b><span>Student planner</span></span></div>
-    <div>
-      <h1>Know what’s due before it’s due.</h1>
-      <p>Track every assignment, reading and exam across your classes, and see what to work on next.</p>
-    </div>
-    <div class="feat">
-      <div style="--x:var(--crit)"><i></i><div><b>Deadline reminders</b><span>Overdue and due-today alerts the moment you open it</span></div></div>
-      <div style="--x:var(--warn)"><i></i><div><b>Ranked priorities</b><span>Urgency and importance, sorted for you</span></div></div>
-      <div style="--x:var(--c3)"><i></i><div><b>Your week by subject</b><span>See which class is taking the most time</span></div></div>
-    </div>
+    <p>Know what’s due before it’s due.</p>
   </div>
   <div class="auth-main">
     <div class="auth-card">
@@ -68,19 +66,23 @@
     <nav class="nav" aria-label="Sections">
       <button data-view="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
       <button data-view="tasks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/></svg>Tasks<span class="count" id="navCount">0</span></button>
-      <button data-view="priorities"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Priorities</button>
-      <button data-view="subjects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19"/><path d="M8 7h7"/></svg>Subjects</button>
+      <button data-view="subjects" class="nav-mobile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v15H6.5A2.5 2.5 0 0 0 4 20.5 2.5 2.5 0 0 0 6.5 23H19"/><path d="M8 7h7"/></svg>Subjects</button>
     </nav>
+    <div class="side-subjects">
+      <div class="side-label">
+        <span>Subjects</span>
+        <span class="side-actions">
+          <button class="icon-btn" id="sideAddProject" data-new-project="1" title="New project" aria-label="New project"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 10v6M9 13h6"/></svg></button>
+          <button class="icon-btn" data-new-subject="1" title="New subject" aria-label="New subject"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        </span>
+      </div>
+      <div class="snav-list" id="sideSubjects"></div>
+    </div>
     <div class="today-card"><small>Today</small><strong id="sideDate"></strong><span id="sideWeek"></span></div>
     <button class="me" data-view="settings" aria-label="Account and settings"><span class="avatar" id="meAvatar"></span><span class="me-text"><b id="meName"></b><span id="meEmail"></span></span></button>
   </aside>
 
   <main>
-    <div class="topbar">
-      <div class="alerts" id="alerts" aria-live="polite"></div>
-      <button class="btn cta" data-go="tasks" data-focus="1" aria-label="New task"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="bell-label">New task</span></button>
-      <button class="bell" id="bell" data-open-rem="1" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="bell-label">Reminders</span><span class="badge" id="bellBadge" hidden></span></button>
-    </div>
     <div class="banner" id="banner" hidden></div>
 
     <section class="view" id="v-dashboard" hidden>
@@ -100,77 +102,135 @@
           <div id="bars"></div>
         </div>
         <div class="card">
-          <div class="card-head"><div><h2>Up next</h2><p class="sub">Top of your priority list</p></div><button class="btn ghost" data-go="priorities">See all</button></div>
+          <div class="card-head"><div><h2>Up next</h2><p class="sub">Top of your priority list</p></div><button class="btn ghost" data-go="tasks">See all</button></div>
           <div class="list" id="upnext"></div>
         </div>
       </div>
     </section>
 
     <section class="view" id="v-tasks" hidden>
-      <div class="head"><div><h1>Tasks</h1><p>Add assignments, readings and exam prep, then tick them off.</p></div></div>
-      <div class="tasks-grid">
-        <div class="card">
-          <div class="card-head"><h2>New task</h2></div>
-          <form id="form" novalidate>
-            <div class="field"><label for="f-name">Task</label><input id="f-name" placeholder="e.g. Lab report: titration" maxlength="140" autocomplete="off"></div>
-            <div class="field"><label for="f-subject">Subject</label>
-              <select id="f-subject"></select>
-              <input id="f-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
-            </div>
-            <div class="field"><label for="f-category">Category <span class="opt">(optional)</span></label>
-              <select id="f-category"></select>
-              <input id="f-category-new" placeholder="New category name, e.g. Quiz" maxlength="40" autocomplete="off" hidden aria-label="New category name">
-              <p class="field-hint">Edit subjects and categories in <button type="button" data-go="subjects">Subjects</button>.</p>
-            </div>
-            <div class="field"><label for="f-due">Due date</label><input id="f-due" type="date"></div>
-            <div class="field"><span class="lab" id="imp-lab">Importance</span>
-              <div class="seg" role="radiogroup" aria-labelledby="imp-lab">
-                <input type="radio" name="imp" id="imp-low" value="low"><label for="imp-low">Low</label>
-                <input type="radio" name="imp" id="imp-med" value="medium" checked><label for="imp-med">Medium</label>
-                <input type="radio" name="imp" id="imp-high" value="high"><label for="imp-high">High</label>
-              </div>
-            </div>
-            <p class="form-err" id="formErr" hidden></p>
-            <button class="btn cta" type="submit">Add task</button>
-          </form>
+      <div class="head">
+        <div><h1>Tasks</h1><p id="taskSub"></p></div>
+        <div class="head-actions">
+          <div class="filters" role="group" aria-label="Layout">
+            <button data-layout="list" aria-pressed="true">List</button>
+            <button data-layout="board" aria-pressed="false">Board</button>
+          </div>
+          <button class="btn primary" data-new-task="1">Add task</button>
         </div>
-        <div class="card">
-          <div class="card-head">
-            <div><h2>All tasks</h2><p class="sub" id="taskSub"></p></div>
-            <div class="filters" role="group" aria-label="Filter tasks">
-              <button data-filter="active" aria-pressed="true">Active</button>
-              <button data-filter="done" aria-pressed="false">Done</button>
-              <button data-filter="all" aria-pressed="false">All</button>
+      </div>
+      <div class="toolbar">
+        <p class="order-hint" id="taskHint"></p>
+        <button class="link" id="prioReset" data-order-mode="prio:auto" hidden>Reset to automatic</button>
+      </div>
+      <div id="listView">
+        <div class="tt" data-tt="tasks">
+          <form class="tt-add" data-tt-add="tasks" autocomplete="off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
+          </form>
+          <div class="tt-scroll">
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span>Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-list" id="taskList" data-reorder="prio"></div>
+            <div class="tt-done" hidden>
+              <button type="button" class="tt-done-toggle" data-done-toggle="tasks" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
+              <div class="tt-done-list" hidden></div>
             </div>
           </div>
-          <p class="order-hint" id="taskHint"></p>
-          <div class="list" id="taskList" data-reorder="task"></div>
         </div>
       </div>
+      <div class="board" id="board" hidden></div>
     </section>
 
-    <section class="view" id="v-priorities" hidden>
-      <div class="head">
-        <div><h1>Priorities</h1><p>Active tasks ranked by how soon they're due and how much they matter.</p></div>
-        <button class="btn" id="prioReset" data-order-mode="prio:auto" hidden>Reset to automatic ranking</button>
-      </div>
-      <p class="order-hint" id="prioHint"></p>
-      <div class="prio" id="prioList" data-reorder="prio"></div>
-      <p class="how"><b>How the ranking works.</b> Each task gets urgency points from its due date (overdue scores highest, then today, tomorrow, this week, and later) plus importance points (high, medium, low). Higher totals rank first. When two tasks tie, the one due sooner wins. Drag a task by its handle to set your own order; new tasks are slotted in by their score.</p>
-    </section>
-
+    <!-- Phones only: the sidebar's subject list, since the sidebar is a bottom bar there. -->
     <section class="view" id="v-subjects" hidden>
-      <div class="head"><div><h1>Subjects</h1><p>Manage your classes and types of work. Click a name to rename it; every task using it updates too.</p></div></div>
-      <div class="subj-grid">
-        <div class="card">
-          <div class="card-head"><div><h2>Subjects</h2><p class="sub">The classes you're taking</p></div></div>
-          <div class="items" id="items-subjects"></div>
-          <form class="add-item" data-kind="subjects"><input id="add-subjects" placeholder="Add a subject, e.g. Biology" maxlength="40" autocomplete="off" aria-label="New subject"><button class="btn primary" type="submit">Add</button></form>
+      <div class="head">
+        <div><h1>Subjects</h1><p>Open a subject to see its projects and tasks.</p></div>
+        <div class="head-actions"><button class="btn" id="idxAddProject" data-new-project="1">New project</button><button class="btn primary" data-new-subject="1">New subject</button></div>
+      </div>
+      <div class="snav-list snav-page" id="subjIndex"></div>
+    </section>
+
+    <!-- Level 1: a subject, with its projects and the tasks filed straight under it. -->
+    <section class="view" id="v-subject" hidden>
+      <div class="head subj-page-head">
+        <div class="subj-head" id="subjHead"></div>
+      </div>
+      <div id="subjBody">
+        <div class="subj-actions"><button class="btn" id="subjAddProject" data-new-project="1">Add project</button><button class="btn primary" data-new-task="subject">Add task</button></div>
+        <div class="card subj-projects">
+          <div class="card-head"><div><h2>Projects</h2><p class="sub">Open a project to see its tasks.</p></div></div>
+          <div class="proj-list" id="subjProjects"></div>
         </div>
-        <div class="card">
-          <div class="card-head"><div><h2>Categories</h2><p class="sub">Kinds of work, like readings or exam prep</p></div></div>
-          <div class="items" id="items-categories"></div>
-          <form class="add-item" data-kind="categories"><input id="add-categories" placeholder="Add a category, e.g. Quiz" maxlength="40" autocomplete="off" aria-label="New category"><button class="btn primary" type="submit">Add</button></form>
+        <div class="section-head"><h2>Tasks</h2><p class="sub">Tasks in this subject that aren’t part of a project.</p></div>
+        <div class="tt" data-tt="subject">
+          <form class="tt-add" data-tt-add="subject" autocomplete="off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
+          </form>
+          <div class="tt-scroll">
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span>Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-list"></div>
+            <div class="tt-done" hidden>
+              <button type="button" class="tt-done-toggle" data-done-toggle="subject" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
+              <div class="tt-done-list" hidden></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Level 2: a project, with its tasks (level 3). -->
+    <section class="view" id="v-project" hidden>
+      <button class="link back" id="projBack" data-open-subject="none">← Subject</button>
+      <div class="head">
+        <div class="proj-title">
+          <button class="check" id="projCheck" data-proj-toggle="" aria-pressed="false" aria-label="Mark project done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></button>
+          <div><h1 id="projTitle"></h1><p id="projSub"></p></div>
+        </div>
+        <button class="btn primary" id="projAdd" data-new-task="project">Add task</button>
+      </div>
+      <div id="projBody">
+        <div class="section-head"><h2>Tasks</h2><p class="sub">Everyone in the group can see, edit and tick off these tasks.</p></div>
+        <div class="tt" data-tt="project">
+          <form class="tt-add" data-tt-add="project" autocomplete="off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
+          </form>
+          <div class="tt-scroll">
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span>Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-list"></div>
+            <div class="tt-done" hidden>
+              <button type="button" class="tt-done-toggle" data-done-toggle="project" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
+              <div class="tt-done-list" hidden></div>
+            </div>
+          </div>
+        </div>
+        <div class="proj-grid">
+          <div class="card">
+            <div class="card-head"><div><h2>Group</h2><p class="sub">Send the invite link to your groupmates. Anyone with the link can join.</p></div></div>
+            <ul class="members" id="pjMembers"></ul>
+            <div class="field">
+              <label for="pjLink">Invite link</label>
+              <div class="copy-row"><input id="pjLink" readonly><button class="btn" type="button" data-copy-invite="1">Copy</button></div>
+              <p class="field-hint" id="pjResetWrap"><button type="button" data-reset-invite="1">Make a new link</button> if the old one went to the wrong people.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Details</h2></div></div>
+            <form id="pjForm" novalidate>
+              <div class="field"><label for="pj-name">Project name</label><input id="pj-name" maxlength="120" autocomplete="off"></div>
+              <div class="field"><label for="pj-due">Due date <span class="opt">(optional)</span></label><input id="pj-due" type="date"></div>
+              <div class="field"><label for="pj-subject">Your subject for it <span class="opt">(optional)</span></label>
+                <select id="pj-subject"></select>
+                <input id="pj-subject-new" placeholder="New subject name" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
+                <p class="field-hint">Only you see this. Groupmates can file the project under their own subject, or none.</p>
+              </div>
+              <p class="form-err" id="pjErr" hidden></p>
+              <div><button class="btn primary" type="submit">Save</button></div>
+            </form>
+            <div class="danger-zone" id="pjDanger"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -215,10 +275,17 @@
             </div>
           </div>
           <div class="card">
-            <div class="card-head"><div><h2>Reminders</h2><p class="sub">Which deadlines show in the alert bar and pop-ups.</p></div></div>
-            <div class="set-row"><label for="setRemDays">Remind me about tasks due within</label>
-              <select id="setRemDays" class="rem-select"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="5">5 days</option><option value="7">7 days</option><option value="14">14 days</option></select>
+            <div class="card-head"><div><h2>Notifications</h2><p class="sub">A short summary of what’s due, four times a day: 7 am, noon, 4 pm and 8 pm (Philippine time).</p></div></div>
+            <div class="notif" id="notifBody">
+              <div class="set-row"><div><b>Push on this device</b><p class="sub" id="pushNote"></p></div><button class="btn" type="button" id="pushBtn" data-push-toggle="1">Turn on</button></div>
+              <div class="set-row"><div><b>Email</b><p class="sub" id="emailNote">Sent to your account email once Pacer’s mailbox is connected. Every email has an unsubscribe link.</p></div><button class="btn" type="button" id="emailBtn" data-email-toggle="1">Turn on</button></div>
             </div>
+            <p class="sub" id="notifOff" hidden></p>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><h2>Categories</h2><p class="sub">Kinds of work, like readings or exam prep. Click a name to rename it.</p></div></div>
+            <div class="items" id="items-categories"></div>
+            <form class="add-item" id="catForm"><input id="add-categories" placeholder="Add a category, e.g. Quiz" maxlength="40" autocomplete="off" aria-label="New category"><button class="btn primary" type="submit">Add</button></form>
           </div>
           <div class="card">
             <div class="card-head"><div><h2>Session</h2><p class="sub" id="sessionNote"></p></div></div>
@@ -229,23 +296,33 @@
     </section>
   </main>
 </div>
-<div class="scrim" id="scrim" data-close-rem="1" hidden></div>
-<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" hidden>
-  <div class="panel-head"><h2 id="panelTitle" tabindex="-1">Reminders</h2><button class="btn ghost" data-close-rem="1">Close</button></div>
-  <div class="panel-set"><label for="remDays">Remind me about tasks due within</label>
-    <select id="remDays" class="rem-select"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="5">5 days</option><option value="7">7 days</option><option value="14">14 days</option></select>
+<div class="modal" id="quickModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="quickTitle">
+    <div class="card-head"><h2 id="quickTitle" tabindex="-1">New project</h2><button class="btn ghost" type="button" data-close-quick="1">Cancel</button></div>
+    <form id="quickForm" novalidate>
+      <div class="field"><label for="q-name" id="q-name-label">Name</label><input id="q-name" autocomplete="off"></div>
+      <div class="field" id="q-subject-field"><label for="q-subject">Subject <span class="opt">(optional)</span></label>
+        <select id="q-subject"></select>
+        <input id="q-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
+      </div>
+      <div class="field" id="q-due-field"><label for="q-due">Due date <span class="opt">(optional)</span></label><input id="q-due" type="date"></div>
+      <p class="form-err" id="quickErr" hidden></p>
+      <div class="modal-actions"><button class="btn primary" type="submit" id="quickSubmit">Add project</button></div>
+    </form>
   </div>
-  <div class="panel-body" id="remBody"></div>
-  <div class="panel-foot">Reminders appear while this page is open. Snoozed tasks come back the next day.</div>
-</aside>
+</div>
 <div class="modal" id="editModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="editTitle">
     <div class="card-head"><h2 id="editTitle" tabindex="-1">Edit task</h2><button class="btn ghost" type="button" data-close-edit="1">Cancel</button></div>
     <form id="editForm" novalidate>
-      <div class="field"><label for="e-name">Task</label><input id="e-name" maxlength="140" autocomplete="off"></div>
-      <div class="field"><label for="e-subject">Subject</label>
+      <div class="field"><label for="e-name">Task</label><input id="e-name" placeholder="e.g. Lab report: titration" maxlength="140" autocomplete="off"></div>
+      <div class="field"><label for="e-project">Project <span class="opt">(optional)</span></label>
+        <select id="e-project"></select>
+        <p class="field-hint" id="e-proj-note" hidden>Project tasks are shared with the group and use the subject you filed the project under.</p>
+      </div>
+      <div class="field" id="e-subject-field"><label for="e-subject">Subject <span class="opt">(optional)</span></label>
         <select id="e-subject"></select>
-        <input id="e-subject-new" placeholder="New subject name" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
+        <input id="e-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
       </div>
       <div class="field"><label for="e-category">Category <span class="opt">(optional)</span></label>
         <select id="e-category"></select>
@@ -259,19 +336,25 @@
           <input type="radio" name="eimp" id="eimp-high" value="high"><label for="eimp-high">High</label>
         </div>
       </div>
-      <label class="done-toggle" for="e-done"><input type="checkbox" id="e-done"> Mark as done</label>
+      <div class="field"><span class="lab" id="estat-lab">Status</span>
+        <div class="seg" role="radiogroup" aria-labelledby="estat-lab">
+          <input type="radio" name="estat" id="estat-todo" value="todo"><label for="estat-todo">To do</label>
+          <input type="radio" name="estat" id="estat-doing" value="doing"><label for="estat-doing">Doing</label>
+          <input type="radio" name="estat" id="estat-done" value="done"><label for="estat-done">Done</label>
+        </div>
+      </div>
       <p class="form-err" id="editErr" hidden></p>
       <div class="modal-actions">
-        <button class="btn primary" type="submit">Save changes</button>
+        <button class="btn primary" type="submit" id="editSubmit">Save changes</button>
         <span class="spacer"></span>
         <span id="editDelete"><button class="btn ghost danger-text" type="button" data-edit-del="ask">Delete task</button></span>
       </div>
     </form>
   </div>
 </div>
-<div class="pops" id="pops" aria-live="polite"></div>
 <div class="toast" id="toast" hidden role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.58.0/dist/umd/supabase.js"></script>
+<script src="local-db.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
