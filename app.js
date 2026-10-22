@@ -55,7 +55,7 @@
   // False until the projects migration (supabase/migrations/20261021000000_projects_and_sharing.sql) is applied.
   // Without it, tasks still load and save, but projects, sharing and the Doing status are off.
   let v2 = true;
-  let doneOpen = {tasks:false, subject:false, project:false}, tablePending = false, groupBy = 'subject', picking = null, confirming = null, itemsPending = false;
+  let doneOpen = {tasks:false, subject:false, project:false}, tablePending = false, picking = null, confirming = null, itemsPending = false;
   const lsGet = k => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) {} };
   const LAYOUT = 'pacer.layout.v1';
@@ -63,7 +63,7 @@
   const uid = () => crypto.randomUUID();
   const hash = s => { let h = 0; for (const c of s.toLowerCase()) h = (h*31 + c.charCodeAt(0)) >>> 0; return h; };
   const hashColor = s => hash(s) % 8 + 1;
-  const DEFAULT_CATS = ['Assignment','Reading','Exam prep','Project'];
+  const DEFAULT_CATS = ['Assignment','Reading','Exam prep'];
   const FIELD = {subjects:'subject', categories:'category'};
   const COLS = [['todo','Not started'],['doing','In progress'],['done','Done']];
   const statusOf = t => t.done ? 'done' : t.status === 'doing' ? 'doing' : 'todo';
@@ -517,22 +517,8 @@
   const subjChip = t => { const s = subjOf(t); return s ? '<span class="chip" style="--c:'+colorOf('subjects', s)+'"><i class="dot"></i>'+esc(s)+'</span>' : ''; };
   const projTag = (t, opts) => { const p = t.projectId && projOf(t.projectId); return p && !(opts && opts.noProject) ? '<button class="ptag" data-open-project="'+p.id+'" title="Open project">'+folderSvg+esc(p.name)+'</button>' : ''; };
   const exampleTag = t => t.example ? '<span class="tag">Example</span>' : '';
-  const doingTag = t => !t.done && t.status === 'doing' ? '<span class="doing">Doing</span>' : '';
+  const doingTag = t => !t.done && t.status === 'doing' ? '<span class="doing">In progress</span>' : '';
 
-  function rowHtml(t, opts={}){
-    const due = dueLabel(t.due);
-    return '<div class="row'+(t.done?' is-done':'')+'" data-row-id="'+t.id+'">'
-      + '<button class="check" data-toggle="'+t.id+'" aria-pressed="'+!!t.done+'" aria-label="'+(t.done?'Mark not done: ':'Mark done: ')+esc(t.name)+'">'+checkSvg+'</button>'
-      + '<div class="t-main"><span class="t-name">'+esc(t.name)+'</span><div class="meta">'
-      + subjChip(t) + projTag(t, opts)
-      + (t.category ? '<span class="cat">'+esc(t.category)+'</span>' : '')
-      + '<span class="date '+(t.done?'':due.cls)+'">'+(t.done ? 'Done · '+esc(due.text.replace(/^Due /,'')) : esc(due.text))+'</span>'
-      + '<span class="imp '+t.importance+'">'+t.importance+'</span>' + doingTag(t) + exampleTag(t)
-      + '</div></div>'
-      + editBtn(t)
-      + (opts.del ? '<button class="del" data-del="'+t.id+'" title="Delete" aria-label="Delete '+esc(t.name)+'">'+binSvg+'</button>' : '')
-      + '</div>';
-  }
   // ---------- tasks table: one row per task, every column edited in place ----------
   const IMPS = [['high','High'],['medium','Medium'],['low','Low']];
   const opt = (v, text, on) => '<option value="'+esc(v)+'"'+(on ? ' selected' : '')+'>'+esc(text)+'</option>';
@@ -551,8 +537,8 @@
       ? '<span class="cell-static" title="Comes from the project. Change it on the project page.">'+(s ? '<i class="dot" style="--c:'+colorOf('subjects', s)+'"></i>'+esc(s) : '—')+'</span>'
       : '<label class="cell'+(s ? '' : ' is-empty')+'"><i class="dot" style="--c:'+colorOf('subjects', s)+'"></i><select data-cell="subject"'+lab('Subject')+'>'
         + opt('', 'No subject', !s) + listOf('subjects').map(x => opt(x.name, x.name, x.name === s)).join('') + opt('__new', '+ New subject…') + '</select></label>';
-    const projCell = !v2 ? '<span class="cell-static">—</span>'
-      : '<label class="cell'+(t.projectId ? '' : ' is-empty')+'">'+folderSvg+'<select data-cell="project"'+lab('Project')+'>' + opt('', 'No project', !t.projectId)
+    const projCell = !v2 ? '<span class="cell-static proj-col">—</span>'
+      : '<label class="cell proj-col'+(t.projectId ? '' : ' is-empty')+'">'+folderSvg+'<select data-cell="project"'+lab('Project')+'>' + opt('', 'No project', !t.projectId)
         + projects.filter(p => !p.done || p.id === t.projectId).sort((a,b) => a.name.localeCompare(b.name)).map(p => opt(p.id, p.name, p.id === t.projectId)).join('') + '</select></label>';
     return '<div class="tt-row'+(t.done ? ' is-done' : '')+(r ? ' t-'+r.tier[0] : '')+(mv ? ' has-mover' : '')+'" data-row-id="'+t.id+'" data-task="'+t.id+'">'
       + (r && grip ? gripBtn(t) : '<span></span>')
@@ -684,15 +670,18 @@
     const item = (id, name, color, n) => '<button class="snav" data-open-subject="'+id+'"'+(sel === id ? ' aria-current="page"' : '')+' style="--c:'+color+'">'
       + '<i class="dot"></i><span class="snav-name">'+esc(name)+'</span>'+(n ? '<span class="count">'+n+'</span>' : '')+'</button>';
     const open = name => tasks.filter(t => !t.done && subjOf(t) === name).length;
-    let h = subs.map(s => item(s.id, s.name, 'var(--c'+s.color+')', open(s.name))).join('');
-    if (looseProjects().length || looseTasks().length) h += item('none', 'No subject', 'var(--faint)', open(''));
+    const curProj = currentView() === 'project' ? currentProject : null;
+    const projItems = name => projects.filter(p => !p.done && projSubject(p.id) === name).sort(projSort).map(p =>
+      '<button class="snav snav-proj" data-open-project="'+p.id+'"'+(curProj === p.id ? ' aria-current="page"' : '')+'>'+folderSvg+'<span class="snav-name">'+esc(p.name)+'</span></button>').join('');
+    let h = subs.map(s => item(s.id, s.name, 'var(--c'+s.color+')', open(s.name)) + projItems(s.name)).join('');
+    if (looseProjects().length || looseTasks().length) h += item('none', 'No subject', 'var(--faint)', open('')) + projItems('');
     return h || '<p class="side-empty">No subjects yet. Use the buttons above to add one.</p>';
   }
   // The subject highlighted in the sidebar: the open subject, or the one the open project is filed under.
   function activeSubjectId(){
     const v = currentView();
     if (v === 'subject') return currentSubject;
-    if (v === 'project' && projOf(currentProject)) { const s = projSubject(currentProject); return s ? (listOf('subjects').find(x => x.name === s) || {}).id : 'none'; }
+    // On a project page the project itself is highlighted, under its subject.
     return null;
   }
   const currentView = () => { const s = document.querySelector('.view:not([hidden])'); return s ? s.id.slice(2) : ''; };
@@ -727,12 +716,7 @@
     $('#sideSubjects').innerHTML = subjNavHtml();
     $('#subjIndex').innerHTML = subjNavHtml();
     $('#sideAddProject').hidden = $('#idxAddProject').hidden = !v2;
-    // Don't rebuild the categories list while someone is renaming one.
-    if (a && a.matches && a.matches('input') && a.closest('#items-categories')) { itemsPending = true; return; }
     itemsPending = false;
-    const cats = listOf('categories');
-    $('#items-categories').innerHTML = cats.length ? cats.map(it => itemHead('categories', it, cats)).join('')
-      : '<div class="empty"><strong>No categories yet</strong><span>Add one below, or create one while adding a task.</span></div>';
   }
 
   // ---------- new subject / new project dialog ----------
@@ -766,28 +750,40 @@
     $('#projBody').hidden = !p; $('#projAdd').hidden = !p; $('#projCheck').hidden = !p;
     if (!p) {
       $('#projTitle').textContent = mode === 'db' ? 'Project not found' : 'Loading…';
-      $('#projSub').textContent = mode === 'db' ? 'It may have been deleted, or you’re no longer in the group.' : '';
+      $('#projChips').textContent = mode === 'db' ? 'It may have been deleted, or you’re no longer in the group.' : '';
       return;
     }
     const ms = membersOf(p.id).sort((a,b) => (a.role === 'owner' ? -1 : b.role === 'owner' ? 1 : 0) || a.joinedAt - b.joinedAt);
     const subj = projSubject(p.id), others = ms.length - 1;
     const back = $('#projBack'), sid = subj ? (listOf('subjects').find(x => x.name === subj) || {}).id : 'none';
     back.textContent = '← ' + (subj || 'No subject'); back.dataset.openSubject = sid || 'none';
-    $('#projTitle').textContent = p.name;
+    const title = $('#projTitle');
+    if (document.activeElement !== title) title.textContent = p.name;
     const chk = $('#projCheck'); chk.dataset.projToggle = p.id; chk.setAttribute('aria-pressed', p.done);
     chk.setAttribute('aria-label', (p.done ? 'Mark not done: ' : 'Mark done: ') + p.name); chk.classList.toggle('on', p.done);
-    $('#projSub').textContent = [p.done ? 'Done' : '', subj ? 'Filed under '+subj : 'No subject', p.due ? 'Due '+fmt(parse(p.due), {weekday:'short', month:'short', day:'numeric'}) : '',
-      others > 0 ? 'Shared with '+plural(others, 'person', 'people') : 'Only you so far'].filter(Boolean).join(' · ');
+
+    // Chips under the name: your subject for it, the due date, progress and the group.
+    const ts = tasks.filter(t => t.projectId === p.id), nDone = ts.filter(t => t.done).length;
+    const chips = $('#projChips'), a = document.activeElement;
+    if (a && chips.contains(a)) tablePending = true;
+    else {
+      const due = p.due ? shortDue(p.due) : null;
+      chips.innerHTML = (p.done ? '<span class="cell-static st-done"><i class="st-dot"></i>Done</span>' : '')
+        + '<label class="cell'+(subj ? '' : ' is-empty')+'" title="Only you see this. Groupmates file the project under their own subject."><i class="dot" style="--c:'+colorOf('subjects', subj)+'"></i><select data-proj-field="subject" aria-label="Your subject for this project">'
+        + opt('', 'No subject', !subj) + listOf('subjects').map(x => opt(x.name, x.name, x.name === subj)).join('') + opt('__new', '+ New subject…') + '</select></label>'
+        + '<label class="cell date-cell'+(p.due ? '' : ' is-empty')+'"><span class="'+(due && !p.done ? due.cls : '')+'">'+(due ? 'Due '+esc(due.text) : 'No due date')+'</span><input type="date" data-proj-field="due" value="'+(p.due || '')+'" aria-label="Project due date"></label>'
+        + (ts.length ? '<span class="cell-static proj-progress"><i class="bar"><i style="width:'+Math.round(nDone / ts.length * 100)+'%"></i></i>'+nDone+' of '+ts.length+' done</span>' : '')
+        + '<span class="cell-static">'+(others > 0 ? 'Shared with '+plural(others, 'person', 'people') : 'Only you so far')+'</span>';
+    }
+    const allDone = ts.length > 0 && nDone === ts.length && !p.done;
+    $('#projDoneNote').hidden = !allDone;
+    $('#projDoneNote').innerHTML = allDone ? '<span>Every task is done.</span><button class="btn primary" data-proj-toggle="'+p.id+'">Mark the project done</button>' : '';
 
     const inProject = t => t.projectId === p.id;
     fillTable('project', rankedWhere(inProject), doneWhere(inProject),
       '<div class="empty"><strong>No tasks yet</strong><span>Type one above to break the project into steps your group can tick off.</span></div>');
 
     const set = (id, v) => { const el = $(id); if (document.activeElement !== el) el.value = v; };
-    set('#pj-name', p.name); set('#pj-due', p.due);
-    fillSelect($('#pj-subject'), listOf('subjects'), 'subjects');
-    if (document.activeElement !== $('#pj-subject') && $('#pj-subject').value !== '__new') { $('#pj-subject').value = subj; $('#pj-subject-new').hidden = true; }
-
     $('#pjMembers').innerHTML = ms.map(m => {
       const n = nameOf(m.userId);
       return '<li><span class="avatar sm">'+esc(initials(n))+'</span><span class="m-name">'+esc(n)+(m.userId === myId() ? ' <span class="muted">(you)</span>' : '')+'</span>'
@@ -810,6 +806,7 @@
     const a = document.activeElement;
     if (a && box.contains(a) && a.closest('.tt-list, .tt-done-list') && a.matches('input, select, [contenteditable]')) { tablePending = true; return; }
     box.querySelector('.tt-head').hidden = !active.length;
+    box.classList.toggle('no-proj', !v2 || !projects.length);
     list.innerHTML = active.length ? active.map((r, i) => ttRowHtml(r.t, r, i, grip)).join('') : empty;
     box.querySelector('.tt-done').hidden = !done.length;
     box.querySelector('.tt-done-count').textContent = done.length;
@@ -836,18 +833,77 @@
       : '<div class="empty"><strong>All caught up</strong><span>Nothing left to do. Nice work.</span></div>', true);
   }
 
+  // ---------- dashboard: today, the next 7 days, and projects ----------
+  function dashRow(r){
+    const t = r.t, n = r.n;
+    const when = n < -1 ? 'Overdue by '+(-n)+' days' : n === -1 ? 'Overdue by 1 day' : n === 0 ? 'Due today' : n === 1 ? 'Due tomorrow' : 'Due '+fmt(parse(t.due), {weekday:'short', month:'short', day:'numeric'});
+    return '<div class="row" data-row-id="'+t.id+'">'
+      + '<button class="check" data-toggle="'+t.id+'" aria-pressed="false" aria-label="Mark done: '+esc(t.name)+'">'+checkSvg+'</button>'
+      + '<div class="t-main"><span class="t-name">'+esc(t.name)+'</span><div class="meta">'+subjChip(t)+projTag(t)
+      + '<span class="date '+(n < 0 ? 'over' : n === 0 ? 'today' : '')+'">'+esc(when)+'</span>'+doingTag(t)+'</div></div></div>';
+  }
+  function renderDashboard(ranked, loading, none){
+    const t0 = today(), [mon] = weekBounds(), hour = new Date().getHours();
+    const first = session ? displayName(session.user).split(' ')[0] : '';
+    $('#dashHello').textContent = (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening') + (first ? ', ' + first : '');
+    const over = ranked.filter(r => r.n < 0), dueToday = ranked.filter(r => r.n === 0);
+    const week = ranked.filter(r => r.n >= 1 && r.n <= 7);
+    const doneWeek = tasks.filter(t => t.done && t.doneAt && t.doneAt >= mon.getTime()).length;
+    const stat = (lab, num, note, cls) => '<div class="card stat '+cls+'"><span class="label">'+lab+'</span><span class="num">'+(loading ? '–' : num)+'</span><span class="note">'+note+'</span></div>';
+    $('#stats').innerHTML =
+      stat('Overdue', over.length, over.length ? 'Past due' : 'Nothing late', over.length ? 'is-crit' : '') +
+      stat('Due today', dueToday.length, dueToday.length ? 'Before tonight' : 'Nothing due today', dueToday.length ? 'is-warn' : '') +
+      stat('Next 7 days', week.length, week.length === 1 ? 'task coming up' : 'tasks coming up', '') +
+      stat('Done this week', doneWeek, doneWeek ? 'Since Monday' : 'Tick one off', doneWeek ? 'is-ok' : '');
+    $('#dashSub').textContent = fmt(t0, {weekday:'long', month:'long', day:'numeric'}) + ' · ' + (loading ? 'Loading your tasks…'
+      : over.length ? plural(over.length, 'task') + ' overdue. Start with those.' : dueToday.length ? plural(dueToday.length, 'task') + ' due today.'
+      : ranked.length ? 'Nothing urgent. A good day to get ahead.' : none ? 'Add your first task to get started.' : 'Everything is done.');
+
+    // Today: overdue, due today, and anything already in progress.
+    const focus = ranked.filter(r => r.n <= 0 || r.t.status === 'doing'), shown = focus.slice(0, 8);
+    $('#todaySub').textContent = loading ? '' : focus.length ? plural(focus.length, 'task') + ' to focus on' : '';
+    $('#todayList').innerHTML = loading ? '<p class="muted">Loading…</p>'
+      : shown.length ? shown.map(dashRow).join('') + (focus.length > shown.length ? '<button class="link more-link" data-go="tasks">+'+(focus.length - shown.length)+' more in Tasks</button>' : '')
+      : none ? emptyHtml('No tasks yet', 'Add your first assignment, or load an example week to explore.', true)
+      : ranked.length ? '<div class="empty"><strong>Nothing due today</strong><span>Next up: '+esc(ranked[0].t.name)+', due '+(ranked[0].n === 1 ? 'tomorrow' : esc(fmt(parse(ranked[0].t.due), {weekday:'long', month:'short', day:'numeric'})))+'.</span></div>'
+      : '<div class="empty"><strong>All caught up</strong><span>Every task is ticked off.</span></div>';
+
+    // Coming up: tomorrow to a week from today, by day.
+    const days = [];
+    for (let n = 1; n <= 7; n++) { const list = week.filter(r => r.n === n); if (list.length) days.push([n, list]); }
+    $('#agenda').innerHTML = loading ? '<p class="muted">Loading…</p>' : days.length ? days.map(([n, list]) => {
+      const d = addDays(t0, n);
+      return '<div class="agenda-day"><div class="agenda-date"><b>'+(n === 1 ? 'Tomorrow' : fmt(d, {weekday:'long'}))+'</b><span>'+fmt(d, {month:'short', day:'numeric'})+'</span></div>'
+        + '<ul>'+list.map(r => '<li><i class="dot" style="--c:'+colorOf('subjects', subjOf(r.t))+'"></i><span>'+esc(r.t.name)+'</span>'
+          + (r.t.importance === 'high' ? '<span class="imp-flag">High</span>' : '') + '</li>').join('')+'</ul></div>';
+    }).join('') : '<div class="empty"><strong>A clear week ahead</strong><span>Nothing is due in the next 7 days.</span></div>';
+
+    // Projects: what's left in each, and when it's due.
+    $('#dashProjectsCard').hidden = !v2 || loading;
+    const live = projects.filter(p => !p.done).sort(projSort), finished = projects.length - live.length;
+    $('#dashProjects').innerHTML = live.length ? live.map(p => {
+      const ts = tasks.filter(t => t.projectId === p.id), dn = ts.filter(t => t.done).length, pct = ts.length ? Math.round(dn / ts.length * 100) : 0;
+      const s = projSubject(p.id), due = p.due ? shortDue(p.due) : null, ms = membersOf(p.id);
+      return '<button class="ptile" data-open-project="'+p.id+'"><span class="ptile-name">'+esc(p.name)+'</span>'
+        + '<span class="meta"><span class="chip" style="--c:'+colorOf('subjects', s)+'"><i class="dot"></i>'+esc(s || 'No subject')+'</span>'
+        + (due ? '<span class="date '+due.cls+'">Due '+esc(due.text)+'</span>' : '') + '</span>'
+        + '<span class="bar"><i style="width:'+pct+'%"></i></span>'
+        + '<span class="ptile-foot"><span>'+(ts.length ? dn+' of '+plural(ts.length, 'task')+' done' : 'No tasks yet')+'</span>'
+        + (ms.length > 1 ? '<span class="avatars">'+ms.slice(0, 3).map(m => '<i>'+esc(initials(nameOf(m.userId)))+'</i>').join('')+'</span>' : '') + '</span></button>';
+    }).join('') + (finished ? '<p class="muted pfoot">'+plural(finished, 'finished project')+'</p>' : '')
+      : '<div class="empty"><strong>No projects yet</strong><span>Got a group report or anything with several steps? Make it a project, or turn an existing task into one from its edit dialog.</span></div>';
+  }
+
   let drag = null, bdrag = null, renderPending = false;
   function render(){
     if (drag || bdrag) { renderPending = true; return; }
     tablePending = false;
     renderPending = false;
-    const t0 = today(), [mon, sun] = weekBounds();
+    const t0 = today();
     $('#sideDate').textContent = fmt(t0, {weekday:'long', month:'short', day:'numeric'});
     $('#sideWeek').textContent = 'Week ' + isoWeek(t0) + ' of ' + t0.getFullYear();
 
     const active = tasks.filter(t => !t.done);
-    const dueToday = active.filter(t => daysUntil(t.due) === 0);
-    const overdue = active.filter(t => daysUntil(t.due) < 0);
     $('#navCount').textContent = active.length;
     const loading = mode === 'loading' || mode === 'db-wait';
     const none = !loading && tasks.length === 0;
@@ -856,37 +912,8 @@
     if (tasks.some(t => t.example)) { b.hidden = false; b.innerHTML = '<span>Showing example tasks so you can see how it works. Your own tasks appear alongside them.</span><button class="btn" data-clear-ex="1">Remove examples</button>'; }
     else b.hidden = true;
 
-    // stats
-    const stat = (lab, num, note, cls) => '<div class="card stat '+cls+'"><span class="label">'+lab+'</span><span class="num">'+(loading?'–':num)+'</span><span class="note">'+note+'</span></div>';
-    const todayNote = [...new Set(dueToday.map(t => subjOf(t) || (projOf(t.projectId) || {}).name).filter(Boolean))].slice(0,2).map(esc).join(', ');
-    $('#stats').innerHTML =
-      stat('Remaining', active.length, active.length === 1 ? 'task to do' : 'tasks to do', '') +
-      stat('Due today', dueToday.length, dueToday.length ? (todayNote || plural(dueToday.length, 'task')) : 'Nothing due today', dueToday.length ? 'is-warn' : '') +
-      stat('Overdue', overdue.length, overdue.length ? 'Past due and not done' : 'All caught up', overdue.length ? 'is-crit' : '');
-    $('#dashSub').textContent = loading ? 'Loading your tasks…' : overdue.length ? overdue.length + ' overdue. Start at the top of your task list.' : dueToday.length ? dueToday.length + ' due today.' : 'Nothing urgent. Good time to get ahead.';
-
-    // weekly breakdown
-    const kind = groupBy === 'subject' ? 'subjects' : 'categories';
-    $('#breakTitle').textContent = 'This week by ' + groupBy;
-    $('#weekRange').textContent = 'Due ' + fmt(mon,{weekday:'short', month:'short', day:'numeric'}) + ' – ' + fmt(sun,{weekday:'short', month:'short', day:'numeric'});
-    const inWeek = tasks.filter(t => { const d = parse(t.due); return d >= mon && d <= sun; });
-    const by = {};
-    inWeek.forEach(t => { const k = (groupBy === 'subject' ? subjOf(t) : t.category) || ''; by[k] = by[k] || {left:0, done:0}; by[k][t.done?'done':'left']++; });
-    const rows = Object.entries(by).sort((a,b) => (b[1].left+b[1].done) - (a[1].left+a[1].done) || a[0].localeCompare(b[0]));
-    const max = Math.max(1, ...rows.map(r => r[1].left + r[1].done));
-    $('#bars').innerHTML = loading ? '<p class="muted">Loading…</p>' : rows.length
-      ? '<div class="bars">' + rows.map(([s, c]) => { const nm = s || (groupBy === 'subject' ? 'No subject' : 'No category'); return '<div class="bar-row" style="--c:'+colorOf(kind, s)+'"><span class="bar-name"><i class="dot"></i><span>'+esc(nm)+'</span></span>'
-          + '<div class="track" role="img" aria-label="'+esc(nm)+': '+c.left+' left, '+c.done+' done"><i class="left" style="width:'+(c.left/max*100)+'%"></i><i class="done" style="width:'+(c.done/max*100)+'%"></i></div>'
-          + '<span class="bar-num"><b>'+c.left+'</b> left'+(c.done?' · '+c.done+' done':'')+'</span></div>'; }).join('') + '</div>'
-          + '<div class="legend"><span><i></i>Still to do</span><span><i class="l2"></i>Done</span></div>'
-      : (none ? emptyHtml('No tasks yet', 'Add your first assignment to see this week broken down.', true) : '<div class="empty"><strong>Nothing due this week</strong><span>Tasks due between Monday and Sunday show up here.</span></div>');
-
-    // up next
     const ranked = prioList();
-    $('#upnext').innerHTML = loading ? '<p class="muted">Loading…</p>' : ranked.length
-      ? ranked.slice(0,4).map(r => rowHtml(r.t)).join('')
-      : (none ? emptyHtml('Your list is clear', 'Tasks you add are ranked here automatically.', false) : '<div class="empty"><strong>All done</strong><span>Every task is checked off.</span></div>');
-
+    renderDashboard(ranked, loading, none);
     renderTasks(ranked, loading, none);
     renderItems();
     renderSubject();
@@ -937,7 +964,6 @@
     else if (d.emailToggle) toggleEmail();
     else if (d.doneToggle) { doneOpen[d.doneToggle] = !doneOpen[d.doneToggle]; render(); }
     else if (d.layout) { layout = d.layout; lsSet(LAYOUT, layout); mover = null; cardMover = null; render(); }
-    else if (d.group) { groupBy = d.group; document.querySelectorAll('[data-group]').forEach(b => b.setAttribute('aria-pressed', b === el)); render(); }
     else if (d.pick) { picking = picking && picking.id === id && picking.kind === kind ? null : {kind, id}; confirming = null; render(); }
     else if (d.color) setColor(kind, id, Number(d.color));
     else if (d.delitem) {
@@ -974,6 +1000,7 @@
     else if (d.edit) openTask(d.edit);
     else if (d.closeEdit) closeEdit();
     else if (d.editDel) editDelete(d.editDel);
+    else if (d.convertTask) convertToProject(editing);
     else if (d.orderMode) resetOrder();
     else if (d.copyInvite) copyInvite(currentProject);
     else if (d.resetInvite) resetInvite(currentProject);
@@ -1125,8 +1152,7 @@
     fillSelect($('#e-subject'), subs, 'subjects');
     $('#e-subject').value = t ? (t.subject || '') : preset && preset.subject != null ? preset.subject : (subs[0] ? subs[0].name : '');
     $('#e-subject-new').hidden = true;
-    fillSelect($('#e-category'), listOf('categories'), 'categories'); $('#e-category').value = t ? (t.category || '') : ''; $('#e-category-new').hidden = true;
-    $('#e-subject-new').value = ''; $('#e-category-new').value = '';
+    $('#e-subject-new').value = '';
     const imp = document.getElementById('eimp-' + (t ? t.importance || 'medium' : 'medium')); if (imp) imp.checked = true;
     const st = document.getElementById('estat-' + (t ? statusOf(t) : 'todo')); if (st) st.checked = true;
     // Without the projects migration there is nowhere to save a project or the Doing status.
@@ -1135,6 +1161,8 @@
     $('#estat-doing').closest('.seg').style.gridTemplateColumns = v2 ? '' : 'repeat(2,1fr)';
     syncSubjectField();
     $('#editDelete').hidden = !t; editDelete('reset'); showErr('#editErr', '');
+    // A personal task that turns out to have several steps can become a project.
+    $('#editConvert').hidden = !t || !!t.projectId || !v2;
     $('#editModal').hidden = false; $('#e-name').focus();
   }
   function closeEdit(){
@@ -1149,7 +1177,7 @@
   }
   $('#editModal').addEventListener('click', e => { if (e.target.id === 'editModal') closeEdit(); });
   $('#e-project').addEventListener('change', syncSubjectField);
-  ['e-subject','e-category','pj-subject'].forEach(id => $('#'+id).addEventListener('change', e => {
+  ['e-subject'].forEach(id => $('#'+id).addEventListener('change', e => {
     const nw = $('#'+id+'-new'); nw.hidden = e.target.value !== '__new'; if (!nw.hidden) nw.focus();
   }));
   // Reuse existing spelling; add genuinely new names to the managed lists.
@@ -1163,43 +1191,61 @@
     e.preventDefault();
     const t = editing ? tasks.find(x => x.id === editing) : null; if (editing && !t) return closeEdit();
     const projectId = $('#e-project').value || null;
-    const sSel = $('#e-subject').value, cSel = $('#e-category').value;
+    const sSel = $('#e-subject').value;
     const name = $('#e-name').value.trim(), due = $('#e-due').value;
-    const sNew = !projectId && sSel === '__new', cNew = cSel === '__new';
+    const sNew = !projectId && sSel === '__new';
     const err = !name ? ['Give the task a name.', '#e-name']
       : (sNew && !$('#e-subject-new').value.trim()) ? ['Type a name for the new subject, or pick one.', '#e-subject-new']
-      : (cNew && !$('#e-category-new').value.trim()) ? ['Type a name for the new category, or pick one.', '#e-category-new']
       : !due ? ['Pick a due date.', '#e-due'] : null;
     if (err) { showErr('#editErr', err[0]); $(err[1]).focus(); return; }
     const L = materialize();
     const s = adopt(L, 'subjects', projectId ? '' : sNew ? $('#e-subject-new').value.trim() : sSel);
-    const c = adopt(L, 'categories', cNew ? $('#e-category-new').value.trim() : cSel);
-    if (s.changed || c.changed) saveLists(L);
+    if (s.changed) saveLists(L);
     const status = (document.querySelector('input[name="estat"]:checked') || {}).value || 'todo', done = status === 'done';
     const importance = (document.querySelector('input[name="eimp"]:checked') || {}).value || 'medium';
     const base = t || {id:uid(), createdAt:Date.now()};
     // A personal task must belong to you; a project task keeps whoever created it.
     const userId = projectId ? (base.userId || myId()) : myId();
-    saveMany([{...base, userId, projectId, name, subject:s.name || '', category:c.name || '', due, importance, status, done, doneAt: done ? (base.doneAt || Date.now()) : null}]);
+    saveMany([{...base, userId, projectId, name, subject:s.name || '', category:base.category || '', due, importance, status, done, doneAt: done ? (base.doneAt || Date.now()) : null}]);
     closeEdit();
     const p = projectId && projOf(projectId);
     toast(t ? 'Saved changes to “'+short(name)+'”' : 'Added “'+short(name)+'”' + (p ? ' to '+short(p.name) : ''));
   });
 
-  // ---------- project details form ----------
-  $('#pjForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const p = projOf(currentProject); if (!p) return;
-    const name = $('#pj-name').value.trim(), due = $('#pj-due').value, sSel = $('#pj-subject').value;
-    if (!name) { showErr('#pjErr', 'The project needs a name.'); $('#pj-name').focus(); return; }
-    if (sSel === '__new' && !$('#pj-subject-new').value.trim()) { showErr('#pjErr', 'Type a name for the new subject, or pick one.'); $('#pj-subject-new').focus(); return; }
-    showErr('#pjErr', '');
-    let subject = sSel;
-    if (sSel === '__new') { const L = materialize(), s = adopt(L, 'subjects', $('#pj-subject-new').value.trim()); subject = s.name; if (s.changed) saveLists(L); $('#pj-subject-new').value = ''; }
-    if (name !== p.name || due !== p.due) saveProject({...p, name, due});
-    setProjectSubject(p.id, subject);
-    toast('Saved “'+short(name)+'”');
+  // ---------- project page: name, subject and due date edited in place ----------
+  document.addEventListener('keydown', e => {
+    if (e.target.id !== 'projTitle') return;
+    if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+    if (e.key === 'Escape') { e.stopPropagation(); const p = projOf(currentProject); if (p) e.target.textContent = p.name; e.target.blur(); }
   });
+  document.addEventListener('focusout', e => {
+    if (e.target.id !== 'projTitle') return;
+    const p = projOf(currentProject); if (!p) return;
+    const name = e.target.textContent.replace(/\s+/g, ' ').trim().slice(0, 120);
+    if (!name) { e.target.textContent = p.name; return toast('The project needs a name'); }
+    if (name !== p.name) { saveProject({...p, name}); toast('Renamed to “'+short(name)+'”'); }
+  }, true);
+  document.addEventListener('change', e => {
+    const f = e.target.dataset && e.target.dataset.projField; if (!f) return;
+    const p = projOf(currentProject); if (!p) return;
+    if (f === 'due') { if (e.target.value !== (p.due || '')) saveProject({...p, due:e.target.value}); return; }
+    if (e.target.value === '__new') {
+      e.target.value = projSubject(p.id);
+      return openQuick('subject', {after: name => setProjectSubject(p.id, name)});
+    }
+    setProjectSubject(p.id, e.target.value);
+    e.target.blur();
+  });
+  // A task that turned out to be bigger: make it a project with the same name, subject and due date.
+  async function convertToProject(id){
+    const t = tasks.find(x => x.id === id); if (!t || t.projectId) return;
+    closeEdit();
+    const pid = await createProject(t.name, t.subject || '', t.due);
+    if (!pid) return;
+    remove(t.id);
+    openProject(pid);
+    toast('“'+short(t.name)+'” is now a project. Add its steps below.');
+  }
 
   // Re-check when the date rolls over or the tab comes back into view.
   let lastDay = iso(today());
@@ -1250,12 +1296,6 @@
     saveMany([{id:uid(), userId:myId(), projectId, name, subject: sub ? sub.name : '', category:'', due:iso(addDays(today(), 2)), importance:'medium',
       status:'todo', done:false, doneAt:null, createdAt:Date.now()}]);
     toast('Added “'+short(name)+'”');
-  });
-  $('#catForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const input = $('#add-categories'), v = input.value.trim();
-    if (addItem('categories', v)) { toast('Added “'+short(v)+'”'); input.value = ''; }
-    input.focus();
   });
   $('#quickModal').addEventListener('click', e => { if (e.target.id === 'quickModal') closeQuick(); });
   $('#q-subject').addEventListener('change', e => { const nw = $('#q-subject-new'); nw.hidden = e.target.value !== '__new'; if (!nw.hidden) nw.focus(); });

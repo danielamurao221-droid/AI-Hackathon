@@ -312,6 +312,56 @@ form{display:flex;flex-direction:column;gap:14px}
 .set-row select{border:1px solid var(--line);background:var(--bg);border-radius:7px;padding:7px 10px}
 
 /* ---------- tasks page: list or board ---------- */
+/* ---------- dashboard ---------- */
+.stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.stat.is-ok .num{color:var(--ok)}
+.dash-grid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}
+.more-link{margin:10px 6px 0;font-size:14px}
+.agenda{display:flex;flex-direction:column}
+.agenda-day{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.agenda-day:first-child{border-top:0;padding-top:2px}
+.agenda-date{display:flex;flex-direction:column;line-height:1.3}
+.agenda-date b{font-weight:600;font-size:15px}
+.agenda-date span{font-size:13px;color:var(--muted)}
+.agenda-day ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.agenda-day li{display:flex;align-items:center;gap:8px;min-width:0;font-size:15px}
+.agenda-day li span:first-of-type{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.imp-flag{font-size:12px;font-weight:600;color:var(--crit);flex:none}
+.dash-projects{margin-top:20px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.pgrid>.empty,.pgrid>.pfoot{grid-column:1/-1}
+.pfoot{margin:2px 2px 0;font-size:14px}
+.ptile{display:flex;flex-direction:column;gap:8px;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:12px 14px;min-width:0}
+.ptile:hover{border-color:var(--faint)}
+.ptile-name{font-weight:600;font-size:16px;overflow-wrap:anywhere}
+.ptile .meta{gap:4px 12px}
+.bar{display:block;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.ptile-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.avatars{display:flex}
+.avatars i{width:24px;height:24px;border-radius:50%;background:var(--surface-2);border:2px solid var(--bg);display:grid;place-items:center;font-style:normal;font-size:10px;font-weight:600;color:var(--fg);margin-left:-6px}
+.avatars i:first-child{margin-left:0}
+
+/* ---------- sidebar: projects under their subject ---------- */
+.snav-proj{padding:4px 10px 4px 29px;font-size:14px}
+.snav-proj svg{width:14px;height:14px;flex:none}
+
+/* ---------- project page ---------- */
+.proj-title-text{min-width:0}
+.proj-name{display:inline-block;min-width:4ch;border-radius:6px;outline:none;padding:0 4px;margin-left:-4px;cursor:text}
+.proj-name:hover{background:var(--surface-2)}
+.proj-name:focus{background:var(--surface);box-shadow:0 0 0 2px var(--accent)}
+.proj-chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:14px;color:var(--muted)}
+.proj-chips .cell,.proj-chips .cell-static{flex:0 1 auto;height:30px;border-radius:999px;background:var(--surface-2);padding:0 12px}
+.proj-chips .cell.is-empty{background:none;border:1px dashed var(--line)}
+.proj-chips select{width:auto;field-sizing:content;max-width:50vw}
+.proj-progress{gap:8px}
+.proj-progress .bar{width:56px}
+.proj-done-note{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;margin-bottom:20px;border-radius:8px;background:var(--ok-soft)}
+.proj-group{margin-top:28px;max-width:640px}
+.tt.no-proj .proj-col{display:none}
+.tt.no-proj .tt-row{grid-template-columns:22px 24px 26px minmax(200px,2.4fr) minmax(130px,1fr) 132px 112px 100px 32px;min-width:780px}
+
 /* ---------- tasks table: every cell is edited in place ---------- */
 .tt{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .tt-add{flex-direction:row;align-items:center;gap:10px;padding:0 16px;border-bottom:1px solid var(--line)}
@@ -454,7 +504,6 @@ form{display:flex;flex-direction:column;gap:14px}
 .proj-title{display:flex;align-items:flex-start;gap:14px;min-width:0}
 .proj-title .check{width:28px;height:28px;margin-top:6px}
 .proj-title .check svg{width:16px;height:16px}
-.proj-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start;margin-top:28px}
 .members{list-style:none;margin:0 0 16px;padding:0;display:flex;flex-direction:column}
 .members li{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
 .members li:first-child{border-top:0}
@@ -471,7 +520,10 @@ form{display:flex;flex-direction:column;gap:14px}
 
 /* ---------- responsive ---------- */
 @media (max-width:980px){
-  .proj-grid,.board{grid-template-columns:minmax(0,1fr)}
+  .board{grid-template-columns:minmax(0,1fr)}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats .stat:nth-child(3){border-left:0}
+  .stats .stat:nth-child(n+3){border-top:1px solid var(--line)}
 }
 @media (max-width:980px){
   .dash-grid,.set-grid{grid-template-columns:minmax(0,1fr)}

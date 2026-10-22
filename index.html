@@ -87,24 +87,22 @@
 
     <section class="view" id="v-dashboard" hidden>
       <div class="head">
-        <div><h1>Dashboard</h1><p id="dashSub">Your workload at a glance.</p></div>
+        <div><h1 id="dashHello">Dashboard</h1><p id="dashSub"></p></div>
       </div>
       <div class="stats" id="stats"></div>
       <div class="dash-grid">
         <div class="card">
-          <div class="card-head">
-            <div><h2 id="breakTitle">This week by subject</h2><p class="sub" id="weekRange"></p></div>
-            <div class="filters" role="group" aria-label="Group by">
-              <button data-group="subject" aria-pressed="true">Subject</button>
-              <button data-group="category" aria-pressed="false">Category</button>
-            </div>
-          </div>
-          <div id="bars"></div>
+          <div class="card-head"><div><h2>Today</h2><p class="sub" id="todaySub"></p></div><button class="btn ghost" data-go="tasks">All tasks</button></div>
+          <div class="list" id="todayList"></div>
         </div>
         <div class="card">
-          <div class="card-head"><div><h2>Up next</h2><p class="sub">Top of your priority list</p></div><button class="btn ghost" data-go="tasks">See all</button></div>
-          <div class="list" id="upnext"></div>
+          <div class="card-head"><div><h2>Coming up</h2><p class="sub">Due in the next 7 days</p></div></div>
+          <div class="agenda" id="agenda"></div>
         </div>
+      </div>
+      <div class="card dash-projects" id="dashProjectsCard">
+        <div class="card-head"><div><h2>Projects</h2><p class="sub">Bigger assignments with steps, on your own or with groupmates.</p></div><button class="btn" data-new-project="1">New project</button></div>
+        <div class="pgrid" id="dashProjects"></div>
       </div>
     </section>
 
@@ -130,7 +128,7 @@
             <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
           </form>
           <div class="tt-scroll">
-            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span>Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
             <div class="tt-list" id="taskList" data-reorder="prio"></div>
             <div class="tt-done" hidden>
               <button type="button" class="tt-done-toggle" data-done-toggle="tasks" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
@@ -169,7 +167,7 @@
             <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
           </form>
           <div class="tt-scroll">
-            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span>Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
             <div class="tt-list"></div>
             <div class="tt-done" hidden>
               <button type="button" class="tt-done-toggle" data-done-toggle="subject" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
@@ -186,11 +184,15 @@
       <div class="head">
         <div class="proj-title">
           <button class="check" id="projCheck" data-proj-toggle="" aria-pressed="false" aria-label="Mark project done"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5 9-10"/></svg></button>
-          <div><h1 id="projTitle"></h1><p id="projSub"></p></div>
+          <div class="proj-title-text">
+            <h1><span class="proj-name" id="projTitle" contenteditable="true" role="textbox" spellcheck="false" aria-label="Project name"></span></h1>
+            <div class="proj-chips" id="projChips"></div>
+          </div>
         </div>
         <button class="btn primary" id="projAdd" data-new-task="project">Add task</button>
       </div>
       <div id="projBody">
+        <div class="proj-done-note" id="projDoneNote" hidden></div>
         <div class="section-head"><h2>Tasks</h2><p class="sub">Everyone in the group can see, edit and tick off these tasks.</p></div>
         <div class="tt" data-tt="project">
           <form class="tt-add" data-tt-add="project" autocomplete="off">
@@ -198,7 +200,7 @@
             <input maxlength="140" placeholder="Add a task, then press Enter" aria-label="New task name">
           </form>
           <div class="tt-scroll">
-            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span>Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
+            <div class="tt-row tt-head" aria-hidden="true"><span></span><span></span><span>#</span><span>Task</span><span>Subject</span><span class="proj-col">Project</span><span>Status</span><span>Importance</span><span>Due</span><span></span></div>
             <div class="tt-list"></div>
             <div class="tt-done" hidden>
               <button type="button" class="tt-done-toggle" data-done-toggle="project" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>Done <span class="tt-done-count"></span></button>
@@ -206,31 +208,16 @@
             </div>
           </div>
         </div>
-        <div class="proj-grid">
-          <div class="card">
-            <div class="card-head"><div><h2>Group</h2><p class="sub">Send the invite link to your groupmates. Anyone with the link can join.</p></div></div>
-            <ul class="members" id="pjMembers"></ul>
-            <div class="field">
-              <label for="pjLink">Invite link</label>
-              <div class="copy-row"><input id="pjLink" readonly><button class="btn" type="button" data-copy-invite="1">Copy</button></div>
-              <p class="field-hint" id="pjResetWrap"><button type="button" data-reset-invite="1">Make a new link</button> if the old one went to the wrong people.</p>
-            </div>
+        <div class="card proj-group">
+          <div class="card-head"><div><h2>Group</h2><p class="sub">Anyone with the invite link can join and work on these tasks with you.</p></div></div>
+          <ul class="members" id="pjMembers"></ul>
+          <div class="field">
+            <label for="pjLink">Invite link</label>
+            <div class="copy-row"><input id="pjLink" readonly><button class="btn" type="button" data-copy-invite="1">Copy</button></div>
+            <p class="field-hint" id="pjResetWrap"><button type="button" data-reset-invite="1">Make a new link</button> if the old one went to the wrong people.</p>
           </div>
-          <div class="card">
-            <div class="card-head"><div><h2>Details</h2></div></div>
-            <form id="pjForm" novalidate>
-              <div class="field"><label for="pj-name">Project name</label><input id="pj-name" maxlength="120" autocomplete="off"></div>
-              <div class="field"><label for="pj-due">Due date <span class="opt">(optional)</span></label><input id="pj-due" type="date"></div>
-              <div class="field"><label for="pj-subject">Your subject for it <span class="opt">(optional)</span></label>
-                <select id="pj-subject"></select>
-                <input id="pj-subject-new" placeholder="New subject name" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
-                <p class="field-hint">Only you see this. Groupmates can file the project under their own subject, or none.</p>
-              </div>
-              <p class="form-err" id="pjErr" hidden></p>
-              <div><button class="btn primary" type="submit">Save</button></div>
-            </form>
-            <div class="danger-zone" id="pjDanger"></div>
-          </div>
+
+          <div class="danger-zone" id="pjDanger"></div>
         </div>
       </div>
     </section>
@@ -283,11 +270,6 @@
             <p class="sub" id="notifOff" hidden></p>
           </div>
           <div class="card">
-            <div class="card-head"><div><h2>Categories</h2><p class="sub">Kinds of work, like readings or exam prep. Click a name to rename it.</p></div></div>
-            <div class="items" id="items-categories"></div>
-            <form class="add-item" id="catForm"><input id="add-categories" placeholder="Add a category, e.g. Quiz" maxlength="40" autocomplete="off" aria-label="New category"><button class="btn primary" type="submit">Add</button></form>
-          </div>
-          <div class="card">
             <div class="card-head"><div><h2>Session</h2><p class="sub" id="sessionNote"></p></div></div>
             <button class="btn" id="signOutBtn">Sign out</button>
           </div>
@@ -324,10 +306,6 @@
         <select id="e-subject"></select>
         <input id="e-subject-new" placeholder="New subject name, e.g. Biology" maxlength="40" autocomplete="off" hidden aria-label="New subject name">
       </div>
-      <div class="field"><label for="e-category">Category <span class="opt">(optional)</span></label>
-        <select id="e-category"></select>
-        <input id="e-category-new" placeholder="New category name" maxlength="40" autocomplete="off" hidden aria-label="New category name">
-      </div>
       <div class="field"><label for="e-due">Due date</label><input id="e-due" type="date"></div>
       <div class="field"><span class="lab" id="eimp-lab">Importance</span>
         <div class="seg" role="radiogroup" aria-labelledby="eimp-lab">
@@ -338,14 +316,15 @@
       </div>
       <div class="field"><span class="lab" id="estat-lab">Status</span>
         <div class="seg" role="radiogroup" aria-labelledby="estat-lab">
-          <input type="radio" name="estat" id="estat-todo" value="todo"><label for="estat-todo">To do</label>
-          <input type="radio" name="estat" id="estat-doing" value="doing"><label for="estat-doing">Doing</label>
+          <input type="radio" name="estat" id="estat-todo" value="todo"><label for="estat-todo">Not started</label>
+          <input type="radio" name="estat" id="estat-doing" value="doing"><label for="estat-doing">In progress</label>
           <input type="radio" name="estat" id="estat-done" value="done"><label for="estat-done">Done</label>
         </div>
       </div>
       <p class="form-err" id="editErr" hidden></p>
       <div class="modal-actions">
         <button class="btn primary" type="submit" id="editSubmit">Save changes</button>
+        <button class="btn" type="button" id="editConvert" data-convert-task="1" title="For bigger work with several steps">Turn into a project</button>
         <span class="spacer"></span>
         <span id="editDelete"><button class="btn ghost danger-text" type="button" data-edit-del="ask">Delete task</button></span>
       </div>
