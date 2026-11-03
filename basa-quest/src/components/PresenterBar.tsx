@@ -7,6 +7,8 @@ import { IconClose, IconSliders } from './Icons';
 export function PresenterBar({ route }: { route: Route }) {
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  // In-page confirmation (browser confirm() dialogs are blocked in some hosts).
+  const [confirming, setConfirming] = useState(false);
 
   function flash(msg: string) {
     setNote(msg);
@@ -36,18 +38,31 @@ export function PresenterBar({ route }: { route: Route }) {
           >
             Show sample learner (Learner 07)
           </button>
-          <button
-            type="button"
-            className="btn btn-ghost btn-block btn-sm"
-            onClick={() => {
-              if (window.confirm('Reset all demo progress on this device?')) {
-                resetDemo();
-                flash('Demo data reset');
-              }
-            }}
-          >
-            Reset demo data
-          </button>
+          {confirming ? (
+            <div className="confirm-box" role="group" aria-label="Confirm reset">
+              <p className="tiny">Clear all demo progress on this device?</p>
+              <div className="row-btns">
+                <button type="button" className="btn btn-ghost btn-sm grow" onClick={() => setConfirming(false)}>
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm grow"
+                  onClick={() => {
+                    resetDemo();
+                    setConfirming(false);
+                    flash('Demo data reset');
+                  }}
+                >
+                  Yes, reset
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" className="btn btn-ghost btn-block btn-sm" onClick={() => setConfirming(true)}>
+              Reset demo data
+            </button>
+          )}
           {note && <p className="tiny presenter-note" role="status">{note}</p>}
         </div>
       )}

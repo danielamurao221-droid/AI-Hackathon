@@ -47,7 +47,7 @@ export function Level({ level }: { level: number }) {
         ))}
       </ol>
       {lp.step === 'story' && <StoryReader chapter={chapter} band={band} page={lp.page} />}
-      {lp.step === 'questions' && <Questions chapter={chapter} band={band} q={lp.q} />}
+      {lp.step === 'questions' && <Questions key={lp.q} chapter={chapter} band={band} q={lp.q} />}
       {lp.step === 'explain' && <ExplainAloud chapter={chapter} learnerId={s.learnerId} />}
     </main>
   );

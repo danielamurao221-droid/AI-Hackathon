@@ -25,6 +25,15 @@ npm run build      # production build into dist/
 npm run preview    # serve the production build at http://localhost:4173
 ```
 
+### One-file preview
+
+```bash
+npm run build:preview   # writes preview/basa-quest.html (CSS + JS inlined, ~300 KB)
+```
+
+This single HTML file runs without a server (for example from a USB stick or as a private
+claude.ai Artifact). It uses `#teacher` for the teacher view. Recorded audio is not included.
+
 ## Demo script (about 5 minutes)
 
 1. Open the app. Type class code **DEMO123**.

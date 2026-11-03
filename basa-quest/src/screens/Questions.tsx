@@ -16,13 +16,10 @@ export function Questions({ chapter, band, q }: { chapter: Chapter; band: Band; 
   const [correct, setCorrect] = useState(false);
   const [showStory, setShowStory] = useState(false);
 
-  // New question: reset the attempt state.
+  // Each question mounts fresh (Level passes key={q}), so attempt state starts empty.
   useEffect(() => {
-    setWrong([]);
-    setCorrect(false);
-    setShowStory(false);
     window.scrollTo(0, 0);
-  }, [q, chapter.level]);
+  }, []);
 
   function choose(i: number) {
     if (correct || wrong.includes(i)) return;

@@ -278,7 +278,7 @@ p { margin: 0; }
 .star-list li.got svg { color: var(--teal); }
 
 /* ── Presenter ── */
-.presenter { position: fixed; right: 8px; bottom: 8px; z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: calc(100vw - 24px); }
+.presenter { position: fixed; right: calc(8px + env(safe-area-inset-right, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; max-width: calc(100vw - 24px); }
 .presenter-toggle {
   min-height: var(--tap); border: 0; border-radius: 999px; padding: 0 14px;
   background: var(--ink); color: #fff; font-weight: 700; font-size: 0.85rem;
@@ -293,6 +293,7 @@ p { margin: 0; }
   box-shadow: 0 10px 30px rgba(0,0,0,.25); display: flex; flex-direction: column; gap: 10px; font-size: 16px;
 }
 .presenter-title { display: flex; flex-direction: column; }
+.confirm-box { display: flex; flex-direction: column; gap: 8px; background: var(--sun-soft); border-radius: 14px; padding: 10px; }
 .presenter-note { color: var(--teal-dark); font-weight: 700; }
 .seg { display: flex; background: var(--teal-soft); border-radius: 999px; padding: 3px; }
 .seg button { flex: 1; min-height: 44px; border: 0; border-radius: 999px; background: transparent; font-weight: 700; font-size: 0.85rem; color: var(--teal-dark); }
