@@ -5,3 +5,4 @@ dist
 preview
 dist-preview
 *.part
+__pycache__/
