@@ -1,18 +1,17 @@
-// Game type: EXPLAIN ALOUD. The child answers "Bakit?" out loud. The meaning is never graded.
+// Explain aloud: the child answers "Bakit?" out loud. The meaning is never graded.
 // Audio is recorded with MediaRecorder and kept in memory only (see lib/recordings.ts).
 // If the mic is missing or blocked, the child can "Tell a partner" and continue.
 // No reward is given for this step: it is a conversation, not a test.
 import { useEffect, useRef, useState } from 'react';
-import { MAX_RECORDING_SECONDS } from '../config';
-import { ui } from '../content/ui';
-import { Bubble } from '../components/Common';
-import { IconCheck, IconMic, IconPeople, IconPlay, IconStop } from '../components/Icons';
-import { useT } from '../lib/i18n';
-import { getRecording, setRecording } from '../lib/recordings';
-import { sfx } from '../lib/sfx';
-import { setExplain, type ExplainMode } from '../lib/store';
-import type { ExplainScene as Explain, ExplainSpec } from '../types';
-import { useSeen, type SceneCtx } from './shared';
+import { MAX_RECORDING_SECONDS } from '../../config';
+import { ui } from '../../content/ui';
+import { Bubble } from '../../components/Common';
+import { IconCheck, IconMic, IconPeople, IconPlay, IconStop } from '../../components/Icons';
+import { useT } from '../../lib/i18n';
+import { getRecording, setRecording } from '../../lib/recordings';
+import { sfx } from '../../lib/sfx';
+import type { ExplainMode } from '../../lib/store';
+import type { ExplainSpec } from '../../types';
 
 type Mode = 'idle' | 'asking' | 'recording' | 'recorded' | 'partner';
 
@@ -38,7 +37,6 @@ export function ExplainAloud({
   const streamRef = useRef<MediaStream | null>(null);
   const timerRef = useRef<number | undefined>(undefined);
   const playerRef = useRef<HTMLAudioElement | null>(null);
-  useSeen(level, [spec.prompt]);
 
   useEffect(() => {
     return () => {
@@ -213,27 +211,5 @@ export function ExplainAloud({
         </button>
       )}
     </div>
-  );
-}
-
-/** Stand-alone explain scene (for later levels). Level 1 uses ExplainAloud inside the decide scene. */
-export function ExplainScene({ scene, ctx, learnerId }: { scene: Explain; ctx: SceneCtx; learnerId: string }) {
-  useSeen(ctx.level, scene.lines);
-  return (
-    <section className="scene-body">
-      {scene.lines.map((line) => (
-        <Bubble key={line.id} line={line} level={ctx.level} />
-      ))}
-      <ExplainAloud
-        spec={scene.explain}
-        level={ctx.level}
-        recKey={`${learnerId}-${scene.id}`}
-        done={ctx.solved}
-        onDone={(m) => {
-          setExplain(ctx.level, m);
-          ctx.onSolved(0);
-        }}
-      />
-    </section>
   );
 }

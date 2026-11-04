@@ -16,12 +16,14 @@ export interface DemoLearner {
     sessionsThisWeek: number;
     daysSinceActive: number;
     /** Share of questions right on the first try, per skill (0-1).
-     *  wordReading = word reading & following written directions (in-app scenes + teacher check). */
+     *  Mixed with real first-try results from the game on the dashboard. */
     accuracy: Record<Skill, number>;
     /** How many answers the accuracy above is based on (weight vs. live answers). */
     answered: number;
   };
 }
+
+export const SKILL_LIST: Skill[] = ['details', 'directions', 'proof', 'vocabulary', 'explaining'];
 
 export const PICTURES: PicId[] = ['mango', 'cat', 'sun', 'fish', 'star', 'boat', 'flower', 'tree', 'ball'];
 
@@ -53,9 +55,9 @@ function build(): DemoLearner[] {
     const id = `L${nn}`;
     const strength = rand(); // overall reading confidence for this fake learner
     const band: Band = strength < 0.45 ? 'A' : 'B';
-    const weakSkill = (['wordReading', 'vocabulary', 'details', 'explaining'] as Skill[])[Math.floor(rand() * 4)];
+    const weakSkill = SKILL_LIST[Math.floor(rand() * SKILL_LIST.length)];
     const accuracy = {} as Record<Skill, number>;
-    for (const s of ['wordReading', 'vocabulary', 'details', 'explaining'] as Skill[]) {
+    for (const s of SKILL_LIST) {
       let v = 0.7 + strength * 0.26 + (rand() - 0.5) * 0.1;
       if (s === weakSkill) v -= 0.03 + (1 - strength) * 0.2;
       accuracy[s] = round2(v);
@@ -88,7 +90,7 @@ function build(): DemoLearner[] {
     levelsDone: 0, // halfway through Level 1 (see seedProgress in lib/store.ts)
     sessionsThisWeek: 2,
     daysSinceActive: 1,
-    accuracy: { wordReading: 0.78, vocabulary: 0.72, details: 0.7, explaining: 0.5 },
+    accuracy: { details: 0.74, directions: 0.62, proof: 0.7, vocabulary: 0.72, explaining: 0.5 },
     answered: 8,
   };
   return list;
@@ -101,15 +103,26 @@ export function findLearner(id: string | null | undefined): DemoLearner | undefi
 }
 
 export const skillNames: Record<Skill, string> = {
-  wordReading: 'Word reading & directions',
+  details: 'Following details',
+  directions: 'Following directions',
+  proof: 'Understanding & proof',
   vocabulary: 'Vocabulary',
-  details: 'Understanding details',
   explaining: 'Explaining why',
 };
 
+/** Where each skill comes from in the game (shown to teachers). */
+export const skillSource: Record<Skill, string> = {
+  details: 'Quest 1 – Aling Nena’s Note (collect the right items)',
+  directions: 'Quest 2 – Lolo Ben’s Build (follow the written steps)',
+  proof: 'Quest 3 – The Missing String (find it, then pick the proving clue)',
+  vocabulary: 'Word gates in the race + the “sobra” task',
+  explaining: 'Nonoy’s Choice (explain “Bakit?” aloud)',
+};
+
 export const skillTips: Record<Skill, string> = {
-  wordReading: 'Read Lolo Ben’s note with them, one step at a time. Ask them to point to the word that tells where each part goes.',
-  vocabulary: 'Preview 2–3 story words before reading. Ask them to use each word in their own sentence.',
-  details: 'After each clue, ask “Who? What? Why?” and let them point to the sentence that tells them.',
+  details: 'Read Lolo Ben’s list together. Ask: “Which word tells you the colour? The size?” before they go looking.',
+  directions: 'Read one step at a time. Ask them to point to the word that says where each part goes.',
+  proof: 'After each clue, ask “Who said it? What does it tell us?” Then ask which sentence proves the answer.',
+  vocabulary: 'Review the Word Notebook words (matibay, pantay, sobra) and ask for a sentence with each one.',
   explaining: 'Model the starter “I think… because…”. Pair them with a partner for the explain-aloud step.',
 };

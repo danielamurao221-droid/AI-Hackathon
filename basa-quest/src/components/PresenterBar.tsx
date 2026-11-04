@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { navigate, type Route } from '../lib/router';
 import { findLearner } from '../data/demoClass';
-import { loadSampleLearner, resetDemo, resetLevel, skipLogin, useAppState } from '../lib/store';
+import { loadSampleLearner, resetDemo, resetGame, skipLogin, startFinaleDemo, useAppState } from '../lib/store';
 import { IconClose, IconSliders } from './Icons';
 
 export function PresenterBar({ route }: { route: Route }) {
@@ -36,10 +36,10 @@ export function PresenterBar({ route }: { route: Route }) {
             onClick={() => {
               skipLogin();
               navigate('student');
-              flash('Learner 01 logged in: barangay map');
+              flash('Learner 01 is in the barangay');
             }}
           >
-            Skip login → map (Learner 01)
+            Skip login → game (Learner 01)
           </button>
           <button
             type="button"
@@ -47,22 +47,33 @@ export function PresenterBar({ route }: { route: Route }) {
             onClick={() => {
               loadSampleLearner();
               navigate('student');
-              flash('Learner 07 loaded: halfway through Level 1');
+              flash('Learner 07: Quests 1–2 done, Quest 3 started');
             }}
           >
             Show sample learner (Learner 07)
           </button>
           <button
             type="button"
+            className="btn btn-soft btn-block btn-sm"
+            onClick={() => {
+              startFinaleDemo();
+              navigate('student');
+              flash('Kite Day race with sample upgrades');
+            }}
+          >
+            Start at the Kite Day race (sample upgrades)
+          </button>
+          <button
+            type="button"
             className="btn btn-ghost btn-block btn-sm"
             disabled={!current}
             onClick={() => {
-              resetLevel(1);
+              resetGame();
               navigate('student');
-              flash(`Level 1 reset for ${current?.name ?? ''}`);
+              flash(`Game reset for ${current?.name ?? ''}`);
             }}
           >
-            Reset Level 1{current ? ` (${current.name})` : ''}
+            Reset game{current ? ` (${current.name})` : ''}
           </button>
           {confirming ? (
             <div className="confirm-box" role="group" aria-label="Confirm reset">

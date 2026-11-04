@@ -30,7 +30,7 @@ export function navigate(to: Route) {
     window.location.hash = to === 'teacher' ? 'teacher' : '';
   } else {
     const path = to === 'teacher' ? '/teacher' : '/';
-    if (window.location.pathname !== path || window.location.hash) window.history.pushState(null, '', path);
+    if (window.location.pathname !== path || window.location.hash) window.history.pushState(null, '', path + window.location.search);
     window.dispatchEvent(new PopStateEvent('popstate'));
   }
   window.scrollTo(0, 0);

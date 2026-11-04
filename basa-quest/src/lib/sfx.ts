@@ -5,7 +5,8 @@ import { getState } from './store';
 type Win = Window & { webkitAudioContext?: typeof AudioContext };
 let ctx: AudioContext | null = null;
 
-function audio(): AudioContext | null {
+/** Shared AudioContext (also used by the music). Null if muted or unavailable. */
+export function audio(): AudioContext | null {
   if (getState().muted) return null;
   try {
     if (!ctx) {
@@ -20,7 +21,7 @@ function audio(): AudioContext | null {
   }
 }
 
-function tone(freq: number, at: number, dur: number, type: OscillatorType = 'sine', vol = 0.12, slideTo?: number) {
+export function tone(freq: number, at: number, dur: number, type: OscillatorType = 'sine', vol = 0.12, slideTo?: number) {
   const a = audio();
   if (!a) return;
   try {
@@ -65,6 +66,16 @@ function noise(at: number, dur: number, vol = 0.05) {
 
 export const sfx = {
   tap: () => tone(660, 0, 0.06, 'triangle', 0.06),
+  step: () => noise(0, 0.05, 0.025),
+  hit: () => {
+    tone(200, 0, 0.14, 'square', 0.06, 120);
+    noise(0, 0.12, 0.05);
+  },
+  crash: () => {
+    tone(330, 0, 0.5, 'sawtooth', 0.05, 90);
+    noise(0.05, 0.4, 0.06);
+  },
+  boost: () => [523, 784, 1047].forEach((f, i) => tone(f, i * 0.05, 0.16, 'triangle', 0.09)),
   pick: () => tone(520, 0, 0.08, 'triangle', 0.08, 700),
   place: () => {
     tone(220, 0, 0.09, 'triangle', 0.14);

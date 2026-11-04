@@ -3,18 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { APP_NAME } from '../config';
 import { DemoBadge } from '../components/Common';
 import { IconClose, IconSearch } from '../components/Icons';
-import { skillNames, skillTips } from '../data/demoClass';
+import { skillNames, skillSource, skillTips } from '../data/demoClass';
 import { buildRows, choiceNames, explainNames, NEED_CUTOFF, pct, SKILLS, timeAgo, type Row } from '../lib/classData';
 import { setBand, setReviewed, useAppState } from '../lib/store';
 import type { Skill } from '../types';
-
-/** Which Level 1 scene gives evidence for each skill (shown to teachers). */
-const SKILL_SOURCE: Record<Skill, string> = {
-  wordReading: 'Find the supplies + Build the kite (following written directions)',
-  details: 'Find the proof',
-  vocabulary: 'New word: “sobra”',
-  explaining: 'Decide and explain',
-};
 
 function SkillChip({ skill }: { skill: Skill | null }) {
   if (!skill) return <span className="chip chip-ok">On track</span>;
@@ -40,7 +32,7 @@ export function Teacher() {
   const reviewedCount = needing.filter((r) => r.reviewedAt).length;
   const practiced = rows.filter((r) => r.sessionsThisWeek > 0).length;
   const avgSessions = rows.reduce((n, r) => n + r.sessionsThisWeek, 0) / rows.length;
-  const level1Done = rows.filter((r) => r.level1Done).length;
+  const level1Done = rows.filter((r) => r.done).length;
   const skillCounts = SKILLS.map((sk) => ({ sk, n: rows.filter((r) => r.helpSkill === sk).length }));
   const topSkill = [...skillCounts].sort((a, b) => b.n - a.n)[0];
 
@@ -193,56 +185,71 @@ function Detail({ row: r, onClose }: { row: Row; onClose: () => void }) {
           <div><dt>Current level</dt><dd>{r.levelLabel}</dd></div>
           <div><dt>Sessions this week</dt><dd>{r.sessionsThisWeek}</dd></div>
           <div><dt>Last activity</dt><dd>{timeAgo(r.lastActivity)}</dd></div>
-          <div><dt>Kite ribbons</dt><dd>{r.ribbons} / 4</dd></div>
+          <div><dt>Kite parts</dt><dd>{a ? a.upgrades : r.done ? 3 : 0} of 4</dd></div>
         </dl>
 
-        <h3>Level 1 activity</h3>
+        <h3>Level 1 game activity</h3>
         {a ? (
-          <dl className="activity" data-testid="activity">
-            <div>
-              <dt>Hints used, by skill</dt>
-              <dd>
-                <ul className="hint-list">
-                  {SKILLS.filter((sk) => sk !== 'explaining').map((sk) => (
-                    <li key={sk}>
-                      <span>{skillNames[sk]}</span>
-                      <b>{a.hintsBySkill[sk] ?? '—'}</b>
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-            <div>
-              <dt>Proof sentence</dt>
-              <dd>
-                {a.proofTries === null
-                  ? 'Not reached yet'
-                  : a.proofTries === 0
-                    ? 'Found on the first try'
-                    : `Found after ${a.proofTries + 1} tries`}
-              </dd>
-            </div>
-            <div><dt>Choice for Nonoy</dt><dd>{a.choice ? choiceNames[a.choice] ?? a.choice : 'Not reached yet'}</dd></div>
-            <div><dt>Explanation</dt><dd>{a.explain ? explainNames[a.explain] : 'Not reached yet'}</dd></div>
-          </dl>
+          <div className="activity" data-testid="activity">
+            <table className="quest-table">
+              <thead>
+                <tr>
+                  <th>Quest</th>
+                  <th>Status</th>
+                  <th>Retries</th>
+                  <th>Hints</th>
+                </tr>
+              </thead>
+              <tbody>
+                {a.quests.map((q) => (
+                  <tr key={q.id} data-quest={q.id}>
+                    <td>
+                      {q.name}
+                      <small>{skillNames[q.skill]}</small>
+                    </td>
+                    <td>{q.status === 'done' ? 'Done' : q.status === 'active' ? 'In progress' : '—'}</td>
+                    <td>{q.status === 'locked' ? '—' : q.retries}</td>
+                    <td>{q.status === 'locked' ? '—' : q.hints}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <dl className="activity-facts">
+              <div><dt>Choice for Nonoy</dt><dd>{a.choice ? choiceNames[a.choice] : 'Not reached yet'}</dd></div>
+              <div><dt>Explanation</dt><dd>{a.explain ? explainNames[a.explain] : 'Not reached yet'}</dd></div>
+              <div>
+                <dt>Kite Day race</dt>
+                <dd>
+                  {a.race.tries} {a.race.tries === 1 ? 'try' : 'tries'} · {a.race.crashes} crashed · {a.race.wins > 0 ? 'won' : `best ${a.race.best} m`}
+                </dd>
+              </div>
+              <div>
+                <dt>Word gates (vocabulary)</dt>
+                <dd>{a.race.gateTries > 0 ? `${a.race.gateCorrect} of ${a.race.gateTries} right` : 'Not reached yet'}</dd>
+              </div>
+            </dl>
+          </div>
         ) : (
-          <p className="muted small">{r.level1Done ? 'Finished Level 1 (sample data, no step-by-step record).' : 'Has not started Level 1 on this device yet.'}</p>
+          <p className="muted small">{r.done ? 'Finished Level 1 (sample data, no step-by-step record).' : 'Has not played on this device yet.'}</p>
         )}
 
         <h3>Skills (right on first try)</h3>
         <ul className="skill-detail">
           {SKILLS.map((sk) => (
-            <li key={sk} className={r.helpSkill === sk ? 'weak' : ''} title={SKILL_SOURCE[sk]}>
+            <li key={sk} className={r.helpSkill === sk ? 'weak' : ''} title={skillSource[sk]}>
               <span>{skillNames[sk]}</span>
               <span className="skill-bar-track"><span className={`skill-bar-fill fill-${sk}`} style={{ width: pct(r.accuracy[sk]) }} /></span>
               <span>{pct(r.accuracy[sk])}</span>
             </li>
           ))}
         </ul>
-        <p className="tiny muted">
-          From Level 1: word reading &amp; directions = Find the supplies + Build the kite; understanding details = Find the
-          proof; vocabulary = New word; explaining why = Decide and explain.
-        </p>
+        <ul className="tiny muted source-list">
+          {SKILLS.map((sk) => (
+            <li key={sk}>
+              <b>{skillNames[sk]}:</b> {skillSource[sk]}
+            </li>
+          ))}
+        </ul>
 
         <div className="card soft">
           <strong>{r.helpSkill ? `Focus: ${skillNames[r.helpSkill]}` : 'On track'}</strong>

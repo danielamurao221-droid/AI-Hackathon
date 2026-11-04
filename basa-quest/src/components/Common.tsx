@@ -10,15 +10,15 @@ import { Character } from './Character';
 import { IconClose, IconSoundOff, IconSpeaker, IconStop } from './Icons';
 
 /** Filipino / English switch. Available on every child screen. */
-export function LangSwitch() {
+export function LangSwitch({ compact }: { compact?: boolean }) {
   const { lang } = useAppState();
   return (
-    <div className="lang-switch" role="group" aria-label="Language / Wika">
-      <button type="button" aria-pressed={lang === 'fil'} onClick={() => setLang('fil')} lang="fil">
-        Filipino
+    <div className={`lang-switch ${compact ? 'compact' : ''}`} role="group" aria-label="Language / Wika">
+      <button type="button" aria-pressed={lang === 'fil'} onClick={() => setLang('fil')} lang="fil" aria-label="Filipino">
+        {compact ? 'FIL' : 'Filipino'}
       </button>
-      <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')} lang="en">
-        English
+      <button type="button" aria-pressed={lang === 'en'} onClick={() => setLang('en')} lang="en" aria-label="English">
+        {compact ? 'ENG' : 'English'}
       </button>
     </div>
   );
@@ -217,26 +217,6 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
       </div>
     </div>
   );
-}
-
-/** Short message that fades out by itself. */
-export function useToast(): [ReactNode, (msg: ReactNode) => void] {
-  const [msg, setMsg] = useState<ReactNode>(null);
-  const timer = useRef<number | undefined>(undefined);
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-  const show = (m: ReactNode) => {
-    window.clearTimeout(timer.current);
-    setMsg(m);
-    timer.current = window.setTimeout(() => setMsg(null), 2800);
-  };
-  return [
-    msg ? (
-      <div className="toast" role="status">
-        {msg}
-      </div>
-    ) : null,
-    show,
-  ];
 }
 
 /** Small note shown if localStorage is blocked. */

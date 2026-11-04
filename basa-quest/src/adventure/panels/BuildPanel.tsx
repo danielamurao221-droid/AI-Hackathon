@@ -1,15 +1,17 @@
-// Game type: DO WHAT THE TEXT SAYS (follow written steps to build something).
-// Content: BuildScene in src/types.ts. Level 1 scene "build": Lolo Ben's kite note.
+// Quest 2 workbench: follow Lolo Ben's written steps to build the kite.
 // Parts can be placed by tap-to-select then tap a spot, or by dragging.
+// A wrong build makes the test flight wobble. After HINT_AFTER wobbles a clue-based hint
+// (with Makinig) appears; after SPARKLE_AFTER the right spot for the failing step sparkles.
 import { useEffect, useRef, useState, type KeyboardEvent as RKeyboardEvent, type PointerEvent as RPointerEvent } from 'react';
-import { Bubble, Feedback, ListenButton } from '../components/Common';
-import { IconCheck } from '../components/Icons';
-import { slotNames, ui } from '../content/ui';
-import { extraAudioId, lineAudio, sharedAudio } from '../lib/audio';
-import { useT } from '../lib/i18n';
-import { sfx } from '../lib/sfx';
-import type { BuildScene as Build, KitePart, KiteSlot } from '../types';
-import { useSeen, type SceneCtx } from './shared';
+import { Feedback, ListenButton, RichText } from '../../components/Common';
+import { IconCheck, IconNext } from '../../components/Icons';
+import { HINT_AFTER, SPARKLE_AFTER } from '../../config';
+import { slotNames, ui } from '../../content/ui';
+import { lineAudio } from '../../lib/audio';
+import { useT } from '../../lib/i18n';
+import { sfx } from '../../lib/sfx';
+import { addToNotebook } from '../../lib/store';
+import type { BuildSpec, KitePart, KiteSlot } from '../../types';
 
 type Kind = 'stick' | 'knot' | 'paper';
 const PART_KIND: Record<KitePart, Kind> = { long: 'stick', short: 'stick', string: 'knot', paper: 'paper' };
@@ -63,8 +65,21 @@ function flap(i: number) {
 
 type Placed = Partial<Record<KiteSlot, KitePart>>;
 
-export function BuildScene({ scene, ctx }: { scene: Build; ctx: SceneCtx }) {
+const SLOT_CENTER: Record<KiteSlot, { x: number; y: number }> = {
+  vertical: { x: 100, y: 40 },
+  acrossTop: { x: 50, y: 75 },
+  acrossMid: { x: 55, y: 125 },
+  knotTop: { x: 100, y: 75 },
+  knotMid: { x: 100, y: 125 },
+  knotEnd: { x: 100, y: 230 },
+  paper: { x: 100, y: 175 },
+};
+
+export function BuildPanel({ spec: scene, onSolved }: { spec: BuildSpec; onSolved: (wrongTests: number, hints: number) => void }) {
   const { t, tx, lang, band } = useT();
+  const [solved, setSolved] = useState(false);
+  const hintsShown = useRef(0);
+  const ctx = { solved };
   const [placed, setPlaced] = useState<Placed>({});
   const [selected, setSelected] = useState<KitePart | null>(null);
   const [folds, setFolds] = useState<boolean[]>([false, false, false, false]);
@@ -75,7 +90,9 @@ export function BuildScene({ scene, ctx }: { scene: Build; ctx: SceneCtx }) {
   const attempts = useRef(0);
   const dragStart = useRef<{ x: number; y: number; moved: boolean } | null>(null);
   const pointerHandled = useRef(false);
-  useSeen(ctx.level, [...scene.lines, ...scene.steps.map((s) => s.line)]);
+  useEffect(() => {
+    addToNotebook(scene.steps.map((s) => s.line.id));
+  }, [scene]);
 
   useEffect(() => {
     if (!wobble) return;
@@ -131,10 +148,11 @@ export function BuildScene({ scene, ctx }: { scene: Build; ctx: SceneCtx }) {
       sfx.good();
       setFailStep(null);
       setNote(null);
-      ctx.onSolved(attempts.current);
+      setSolved(true);
       return;
     }
     attempts.current += 1;
+    if (attempts.current >= HINT_AFTER) hintsShown.current += 1;
     sfx.wobble();
     setWobble(true);
     setFailStep(failing[0].i);
@@ -227,19 +245,18 @@ export function BuildScene({ scene, ctx }: { scene: Build; ctx: SceneCtx }) {
   return (
     <section className="scene-body build-body">
       <div className="build-read">
-        {scene.lines.map((line) => (
-          <Bubble key={line.id} line={line} level={ctx.level} moodOverride={ctx.solved ? 'happy' : failStep !== null ? 'think' : undefined} />
-        ))}
 
         <div className="note-card">
           <div className="note-head">
             <strong>{t(scene.noteTitle)}</strong>
-            <ListenButton srcs={scene.steps.map((s) => lineAudio(s.line, lang, ctx.level, band))} compact />
+            <ListenButton srcs={scene.steps.map((s) => lineAudio(s.line, lang, 1, band))} compact />
           </div>
           <ol className="note-steps" lang={lang}>
             {scene.steps.map((s, i) => (
               <li key={s.line.id} className={`${failStep === i ? 'reread' : ''} ${ctx.solved ? 'ok' : ''}`} data-step={i + 1}>
-                <span>{tx(s.line.text)}</span>
+                <span>
+                    <RichText text={tx(s.line.text)} />
+                  </span>
                 {ctx.solved && <IconCheck size={18} className="step-ok" />}
               </li>
             ))}
@@ -313,6 +330,12 @@ export function BuildScene({ scene, ctx }: { scene: Build; ctx: SceneCtx }) {
                 );
               })}
             {ctx.solved && <path d="M100 230c-8 10 8 14 0 24" stroke="#6b4b2f" strokeWidth="1.6" fill="none" />}
+            {!ctx.solved && failStep !== null && attempts.current >= SPARKLE_AFTER && (
+              <g pointerEvents="none" className="board-sparkle" data-testid="board-sparkle">
+                <circle cx={SLOT_CENTER[scene.steps[failStep].slot].x} cy={SLOT_CENTER[scene.steps[failStep].slot].y} r="16" />
+                <circle cx={SLOT_CENTER[scene.steps[failStep].slot].x} cy={SLOT_CENTER[scene.steps[failStep].slot].y} r="5" />
+              </g>
+            )}
           </svg>
           {wobble && <span className="wobble-tag">{t(ui.wobble)}</span>}
         </div>
@@ -351,16 +374,22 @@ export function BuildScene({ scene, ctx }: { scene: Build; ctx: SceneCtx }) {
         </div>
 
         {note && <p className="gentle" role="status">{note}</p>}
-        {failStep !== null && !ctx.solved && (
+        {failStep !== null && !ctx.solved && attempts.current < HINT_AFTER && <p className="gentle">{t(ui.wobbleTryAgain)}</p>}
+        {failStep !== null && !ctx.solved && attempts.current >= HINT_AFTER && (
           <Feedback
             kind="hint"
             who="lolo"
-            text={t(scene.steps[failStep].hint)}
-            src={sharedAudio(lang, ctx.level, extraAudioId(scene.id, 'hint', `step${failStep + 1}`))}
+            text={tx(scene.steps[failStep].hint.text)}
+            src={lineAudio(scene.steps[failStep].hint, lang, 1, band)}
           />
         )}
         {ctx.solved ? (
-          <Feedback kind="good" who="lolo" text={t(scene.success)} src={sharedAudio(lang, ctx.level, extraAudioId(scene.id, 'ok'))} />
+          <>
+            <Feedback kind="good" who="lolo" text={tx(scene.success.text)} src={lineAudio(scene.success, lang, 1, band)} />
+            <button type="button" className="btn btn-primary btn-block next-btn" onClick={() => onSolved(attempts.current, hintsShown.current)}>
+              <span>{t(ui.next)}</span> <IconNext />
+            </button>
+          </>
         ) : (
           <button type="button" className="btn btn-primary btn-block" onClick={test} aria-disabled={!allPlaced} data-testid="test-kite">
             {t(ui.testKite)}

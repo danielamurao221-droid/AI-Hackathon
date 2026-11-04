@@ -1,8 +1,8 @@
 // Simple expressive characters drawn with inline SVG. Original designs.
 import type { CharId, Mood } from '../types';
 
-const SKIN: Record<CharId, string> = { tala: '#b97a52', nonoy: '#a86c45', lolo: '#9c6a4a' };
-const SHIRT: Record<CharId, string> = { tala: '#e86f51', nonoy: '#2f9c8a', lolo: '#5b7fd6' };
+const SKIN: Record<CharId, string> = { tala: '#b97a52', nonoy: '#a86c45', lolo: '#9c6a4a', nena: '#b07650', jun: '#8f5d3e', muning: '#f2a65a' };
+const SHIRT: Record<CharId, string> = { tala: '#e86f51', nonoy: '#2f9c8a', lolo: '#5b7fd6', nena: '#a066c9', jun: '#f2b33d', muning: '#f2a65a' };
 
 function Eyes({ mood, y = 33 }: { mood: Mood; y?: number }) {
   if (mood === 'happy')
@@ -54,7 +54,31 @@ function Mouth({ mood }: { mood: Mood }) {
   }
 }
 
+function Cat({ size, mood }: { size: number; mood: Mood }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" className={`char char-muning mood-${mood}`} aria-hidden="true" focusable="false">
+      <circle cx="32" cy="32" r="31" fill="var(--char-bg)" />
+      <path d="M14 22 16 6l12 10M50 22 48 6 36 16" fill="#f2a65a" />
+      <circle cx="32" cy="36" r="19" fill="#f2a65a" />
+      <path d="M26 20h2v8h-2zM36 20h2v8h-2z" fill="#d98a3a" />
+      {mood === 'happy' ? (
+        <g stroke="#23313a" strokeWidth="2.4" fill="none" strokeLinecap="round">
+          <path d="M21 35q3-4 6 0M37 35q3-4 6 0" />
+        </g>
+      ) : (
+        <g fill="#23313a">
+          <circle cx="24" cy="34" r="2.6" />
+          <circle cx="40" cy="34" r="2.6" />
+        </g>
+      )}
+      <path d="M30 41l2 2 2-2z" fill="#e86f51" />
+      <path d="M14 40h9M14 45l9-2M50 40h-9M50 45l-9-2" stroke="#7a4a20" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 export function Character({ who, mood = 'happy', size = 56 }: { who: CharId; mood?: Mood; size?: number }) {
+  if (who === 'muning') return <Cat size={size} mood={mood} />;
   const skin = SKIN[who];
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" className={`char char-${who} mood-${mood}`} aria-hidden="true" focusable="false">
@@ -75,6 +99,18 @@ export function Character({ who, mood = 'happy', size = 56 }: { who: CharId; moo
         </>
       )}
       {who === 'nonoy' && <path d="M16 29c0-9 7-14 16-14s16 5 16 14c-4-3-9-5-16-5s-12 2-16 5z" fill="#1f1712" />}
+      {who === 'nena' && (
+        <>
+          <path d="M15 32c0-11 8-17 17-17s17 6 17 17c-3-5-9-9-17-9s-14 4-17 9z" fill="#2b1d16" />
+          <circle cx="32" cy="13" r="6" fill="#2b1d16" />
+        </>
+      )}
+      {who === 'jun' && (
+        <>
+          <path d="M14 27c1-9 8-14 18-14s17 5 18 14z" fill="#2f7a4a" />
+          <path d="M28 25h26v4H28z" fill="#2f7a4a" />
+        </>
+      )}
       {who === 'lolo' && (
         <>
           <path d="M15 34c-1-6 1-11 4-13 1 4 1 8 0 13zM49 34c1-6-1-11-4-13-1 4-1 8 0 13z" fill="#d9d4cc" />

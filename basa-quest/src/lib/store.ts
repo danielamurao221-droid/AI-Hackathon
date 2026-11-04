@@ -1,35 +1,52 @@
 // Demo app state: one object, saved to localStorage (or memory if storage fails).
-// Student play and the teacher dashboard both read from here, so finishing a
-// scene updates the dashboard straight away.
+// The game and the teacher dashboard both read from here, so play updates the dashboard at once.
 import { useSyncExternalStore } from 'react';
-import { PLAYABLE_LEVELS, SAMPLE_LEARNER_ID, STORAGE_KEY } from '../config';
-import { allWords, getLevel, ribbonScenes } from '../content';
+import { SAMPLE_LEARNER_ID, STORAGE_KEY } from '../config';
+import { words, type ItemId } from '../content/adventure';
+import type { UpgradeId } from '../content/ui';
 import { demoLearners, findLearner } from '../data/demoClass';
 import type { Band, Lang, Skill } from '../types';
 import { clearRecordings } from './recordings';
 import { readJSON, removeKey, writeJSON } from './storage';
 
 export type ExplainMode = 'recorded' | 'partner' | 'skipped';
+export type QuestId = 'q1' | 'q2' | 'q3' | 'choice';
+export type ClueGiver = 'nonoy' | 'nena' | 'jun';
 
-export interface SceneLog {
-  /** Wrong tries before solving. Each wrong try showed a hint. */
+export interface QuestState {
+  status: 'locked' | 'active' | 'done';
+  /** Wrong tries (wrong delivery, wobbly test flight, wrong search spot, wrong proof). */
   attempts: number;
-  solved: boolean;
+  /** Clue-based hints shown. */
+  hints: number;
 }
 
-export interface LevelProgress {
-  /** Index of the current scene. */
-  scene: number;
-  done: boolean;
-  /** Scene ids that earned a ribbon. */
-  ribbons: string[];
-  /** Line ids the child has seen, for "Balikan ang kuwento". */
-  clues: string[];
-  log: Record<string, SceneLog>;
-  /** Option id chosen in the decide scene. */
-  choice: string | null;
+export interface FinaleStats {
+  tries: number;
+  crashes: number;
+  wins: number;
+  best: number;
+  gateTries: number;
+  gateCorrect: number;
+}
+
+export interface GameProgress {
+  introSeen: boolean;
+  pos: { x: number; y: number } | null;
+  gateOpen: boolean;
+  quests: Record<QuestId, QuestState>;
+  q1Delivered: ItemId[];
+  q3: { clues: ClueGiver[]; hasString: boolean; proofAttempts: number; sobraAttempts: number };
+  bag: ItemId[];
+  upgrades: UpgradeId[];
+  choice: 'share' | 'keep' | null;
   explain: ExplainMode | null;
-  /** The map has already played the "place restored" animation. */
+  /** Quest Notebook: line ids, in the order the child met them. */
+  notebook: string[];
+  /** Word Notebook: word ids. */
+  words: string[];
+  finale: FinaleStats;
+  restored: boolean;
   restoreSeen: boolean;
 }
 
@@ -40,21 +57,20 @@ export interface SkillStat {
 }
 
 export interface LearnerProgress {
-  levels: Record<number, LevelProgress>;
-  /** Word Notebook: word ids learned. */
-  words: string[];
-  /** Timestamps of logins made in the app. */
+  game: GameProgress;
   sessions: number[];
   lastActivity: number | null;
   answers: Partial<Record<Skill, SkillStat>>;
 }
 
+export type Screen = 'world' | 'race';
+
 export interface AppState {
-  version: 2;
+  version: 3;
   lang: Lang;
   muted: boolean;
   learnerId: string | null;
-  activeLevel: number | null;
+  screen: Screen;
   sessionStart: number | null;
   progress: Record<string, LearnerProgress>;
   /** Teacher "Mark as reviewed": learnerId -> time. */
@@ -65,11 +81,11 @@ export interface AppState {
 
 function initialState(): AppState {
   return {
-    version: 2,
+    version: 3,
     lang: 'fil',
     muted: false,
     learnerId: null,
-    activeLevel: null,
+    screen: 'world',
     sessionStart: null,
     progress: {},
     reviewed: {},
@@ -79,7 +95,7 @@ function initialState(): AppState {
 
 function loadState(): AppState {
   const saved = readJSON<AppState>(STORAGE_KEY);
-  if (!saved || saved.version !== 2) return initialState();
+  if (!saved || saved.version !== 3) return initialState();
   return { ...initialState(), ...saved };
 }
 
@@ -100,7 +116,7 @@ export function setState(update: (s: AppState) => AppState) {
   emit();
 }
 
-function subscribe(fn: () => void) {
+export function subscribe(fn: () => void) {
   listeners.add(fn);
   return () => {
     listeners.delete(fn);
@@ -122,43 +138,78 @@ try {
   /* ignore */
 }
 
-// ───────────── helpers ─────────────
+// ───────────── seeds ─────────────
 
-export function emptyLevel(): LevelProgress {
-  return { scene: 0, done: false, ribbons: [], clues: [], log: {}, choice: null, explain: null, restoreSeen: false };
+const q = (status: QuestState['status'], attempts = 0, hints = 0): QuestState => ({ status, attempts, hints });
+
+export function newGame(): GameProgress {
+  return {
+    introSeen: false,
+    pos: null,
+    gateOpen: false,
+    quests: { q1: q('locked'), q2: q('locked'), q3: q('locked'), choice: q('locked') },
+    q1Delivered: [],
+    q3: { clues: [], hasString: false, proofAttempts: 0, sobraAttempts: 0 },
+    bag: [],
+    upgrades: [],
+    choice: null,
+    explain: null,
+    notebook: [],
+    words: [],
+    finale: { tries: 0, crashes: 0, wins: 0, best: 0, gateTries: 0, gateCorrect: 0 },
+    restored: false,
+    restoreSeen: false,
+  };
 }
 
-function finishedLevel(level: number): LevelProgress {
-  const l = getLevel(level);
-  return { ...emptyLevel(), done: true, restoreSeen: true, ribbons: l ? ribbonScenes(l).map((s) => s.id) : [] };
+function finishedGame(): GameProgress {
+  return {
+    ...newGame(),
+    introSeen: true,
+    gateOpen: true,
+    quests: { q1: q('done'), q2: q('done'), q3: q('done'), choice: q('done') },
+    q1Delivered: ['longBamboo', 'redPaper', 'glueJar'],
+    q3: { clues: ['nonoy', 'nena', 'jun'], hasString: true, proofAttempts: 0, sobraAttempts: 0 },
+    upgrades: ['frame', 'balance', 'longString'],
+    words: words.map((w) => w.id),
+    restored: true,
+    restoreSeen: true,
+  };
 }
 
-/** Starting progress for a learner, copied from the teacher's demo data. */
+/** Sample learner: Quests 1–2 done, Quest 3 started, one try at the race. */
+function sampleGame(): GameProgress {
+  return {
+    ...newGame(),
+    introSeen: true,
+    pos: { x: 700, y: 1150 },
+    gateOpen: true,
+    quests: { q1: q('done', 1, 0), q2: q('done', 2, 1), q3: q('active'), choice: q('active') },
+    q1Delivered: ['longBamboo', 'redPaper', 'glueJar'],
+    q3: { clues: ['nonoy'], hasString: false, proofAttempts: 0, sobraAttempts: 0 },
+    upgrades: ['frame', 'balance'],
+    notebook: [
+      'intro-1', 'intro-2', 'intro-3', 'q1-start-1', 'q1-note-1', 'q1-note-2', 'q1-note-3', 'q1-note-4', 'q1-note-5', 'q1-start-2',
+      'q1-done-1', 'q1-reward', 'q2-start-1', 'q2-step-1', 'q2-step-2', 'q2-step-3', 'q2-step-4', 'q2-done-1', 'q2-reward',
+      'q3-start-1', 'q3-start-2', 'q3-clue-nonoy',
+    ],
+    words: ['matibay', 'pantay'],
+    finale: { tries: 1, crashes: 1, wins: 0, best: 54, gateTries: 2, gateCorrect: 1 },
+  };
+}
+
 function seedProgress(learnerId: string): LearnerProgress {
   const l = findLearner(learnerId);
-  const base: LearnerProgress = { levels: {}, words: [], sessions: [], lastActivity: null, answers: {} };
+  const base: LearnerProgress = { game: newGame(), sessions: [], lastActivity: null, answers: {} };
   if (learnerId === SAMPLE_LEARNER_ID) {
-    // Sample learner: halfway through Level 1, with real-looking activity.
-    const lv1 = getLevel(1)!;
-    const seen = lv1.scenes.slice(0, 3).flatMap((s) => (s.kind === 'pick' ? s.rounds.flatMap((r) => [...r.lines, r.prompt]) : s.kind === 'build' ? [...s.lines, ...s.steps.map((x) => x.line)] : []));
     return {
       ...base,
-      levels: {
-        1: {
-          ...emptyLevel(),
-          scene: 3,
-          ribbons: ['supplies', 'build'],
-          clues: seen.map((x) => x.id),
-          log: { hook: { attempts: 0, solved: true }, supplies: { attempts: 1, solved: true }, build: { attempts: 2, solved: true } },
-        },
-      },
+      game: sampleGame(),
       lastActivity: Date.now() - 26 * 3_600_000,
-      answers: { wordReading: { tries: 2, firstTry: 0, hints: 3 } },
+      answers: { details: { tries: 1, firstTry: 0, hints: 0 }, directions: { tries: 1, firstTry: 0, hints: 1 }, vocabulary: { tries: 2, firstTry: 1, hints: 0 } },
     };
   }
-  if (l && l.base.levelsDone >= 1) {
-    return { ...base, levels: { 1: finishedLevel(1) }, words: allWords.map((w) => w.id) };
-  }
+  if (l && l.base.levelsDone >= 1) return { ...base, game: finishedGame() };
   return base;
 }
 
@@ -166,16 +217,9 @@ export function getProgress(s: AppState, learnerId: string): LearnerProgress {
   return s.progress[learnerId] ?? seedProgress(learnerId);
 }
 
-export function levelProgress(p: LearnerProgress, level: number): LevelProgress {
-  return p.levels[level] ?? emptyLevel();
-}
-
-export function isUnlocked(level: number): boolean {
-  return level >= 1 && level <= PLAYABLE_LEVELS && !!getLevel(level);
-}
-
-export function totalRibbons(p: LearnerProgress): number {
-  return Object.values(p.levels).reduce((n, lp) => n + lp.ribbons.length, 0);
+/** Current learner's game (a fresh one if nobody is logged in). */
+export function currentGame(s: AppState = state): GameProgress {
+  return s.learnerId ? getProgress(s, s.learnerId).game : newGame();
 }
 
 export function bandFor(s: AppState, learnerId: string): Band {
@@ -190,11 +234,56 @@ function updateLearner(fn: (p: LearnerProgress) => LearnerProgress) {
   });
 }
 
-function updateLevel(level: number, fn: (lp: LevelProgress) => LevelProgress) {
-  updateLearner((p) => ({ ...p, levels: { ...p.levels, [level]: fn(levelProgress(p, level)) } }));
+/** Change the current learner's game. */
+export function updateGame(fn: (g: GameProgress) => GameProgress) {
+  updateLearner((p) => ({ ...p, game: fn(p.game) }));
 }
 
-// ───────────── student actions ─────────────
+export function updateQuest(id: QuestId, fn: (qs: QuestState) => QuestState) {
+  updateGame((g) => ({ ...g, quests: { ...g.quests, [id]: fn(g.quests[id]) } }));
+}
+
+/** Evidence for a dashboard skill: one solved task, with its wrong tries and hints. */
+export function recordSkill(skill: Skill, wrongTries: number, hints: number) {
+  updateLearner((p) => {
+    const prev = p.answers[skill] ?? { tries: 0, firstTry: 0, hints: 0 };
+    return {
+      ...p,
+      answers: { ...p.answers, [skill]: { tries: prev.tries + 1, firstTry: prev.firstTry + (wrongTries === 0 ? 1 : 0), hints: prev.hints + hints } },
+    };
+  });
+}
+
+/** Add lines to the Quest Notebook (small talk is skipped). */
+export function addToNotebook(ids: string[]) {
+  const g = currentGame();
+  const fresh = ids.filter((id) => !id.startsWith('idle-') && !g.notebook.includes(id));
+  if (fresh.length === 0) return;
+  updateGame((gm) => ({ ...gm, notebook: [...gm.notebook, ...fresh] }));
+}
+
+export function learnWord(id: string) {
+  updateGame((g) => (g.words.includes(id) ? g : { ...g, words: [...g.words, id] }));
+}
+
+export function addUpgrade(id: UpgradeId) {
+  updateGame((g) => (g.upgrades.includes(id) ? g : { ...g, upgrades: [...g.upgrades, id] }));
+}
+
+export function savePosition(x: number, y: number) {
+  const s = getState();
+  if (!s.learnerId) return;
+  // Position changes often; write it without waking every listener.
+  const p = getProgress(s, s.learnerId);
+  state = { ...s, progress: { ...s.progress, [s.learnerId]: { ...p, game: { ...p.game, pos: { x: Math.round(x), y: Math.round(y) } } } } };
+  writeJSON(STORAGE_KEY, state);
+}
+
+export function setScreen(screen: Screen) {
+  setState((s) => ({ ...s, screen }));
+}
+
+// ───────────── app actions ─────────────
 
 export function setLang(lang: Lang) {
   setState((s) => ({ ...s, lang }));
@@ -211,7 +300,7 @@ export function login(learnerId: string) {
     return {
       ...s,
       learnerId,
-      activeLevel: null,
+      screen: 'world',
       sessionStart: now,
       progress: { ...s.progress, [learnerId]: { ...p, sessions: [...p.sessions, now], lastActivity: now } },
     };
@@ -220,78 +309,7 @@ export function login(learnerId: string) {
 
 export function logout() {
   clearRecordings();
-  setState((s) => ({ ...s, learnerId: null, activeLevel: null, sessionStart: null }));
-}
-
-export function openLevel(level: number) {
-  if (!getState().learnerId || !isUnlocked(level)) return; // locked levels never open
-  const lv = getLevel(level)!;
-  updateLevel(level, (lp) =>
-    // Replaying a finished level (or one left on the last scene) starts from scene 1.
-    // Ribbons, words and the restored place are kept.
-    lp.done || lp.scene >= lv.scenes.length ? { ...lp, scene: 0, choice: null, explain: null } : lp,
-  );
-  setState((s) => ({ ...s, activeLevel: level }));
-}
-
-export function closeLevel() {
-  setState((s) => ({ ...s, activeLevel: null }));
-}
-
-export function seeLines(level: number, ids: string[]) {
-  const lp = levelProgress(getProgress(getState(), getState().learnerId ?? ''), level);
-  const fresh = ids.filter((id) => !lp.clues.includes(id));
-  if (fresh.length === 0) return;
-  updateLevel(level, (l) => ({ ...l, clues: [...l.clues, ...fresh] }));
-}
-
-/** A scene was solved. `attempts` = wrong tries (each showed a hint). */
-export function solveScene(level: number, sceneId: string, skill: Skill | undefined, attempts: number, ribbon: boolean) {
-  updateLearner((p) => {
-    const lp = levelProgress(p, level);
-    const answers = { ...p.answers };
-    if (skill) {
-      const prev = answers[skill] ?? { tries: 0, firstTry: 0, hints: 0 };
-      answers[skill] = { tries: prev.tries + 1, firstTry: prev.firstTry + (attempts === 0 ? 1 : 0), hints: prev.hints + attempts };
-    }
-    return {
-      ...p,
-      answers,
-      levels: {
-        ...p.levels,
-        [level]: {
-          ...lp,
-          ribbons: ribbon && !lp.ribbons.includes(sceneId) ? [...lp.ribbons, sceneId] : lp.ribbons,
-          log: { ...lp.log, [sceneId]: { attempts, solved: true } },
-        },
-      },
-    };
-  });
-}
-
-export function nextScene(level: number) {
-  updateLevel(level, (lp) => ({ ...lp, scene: lp.scene + 1 }));
-}
-
-export function setChoice(level: number, choice: string | null) {
-  updateLevel(level, (lp) => ({ ...lp, choice }));
-}
-
-export function setExplain(level: number, mode: ExplainMode) {
-  updateLevel(level, (lp) => ({ ...lp, explain: mode }));
-}
-
-export function learnWord(wordId: string) {
-  updateLearner((p) => (p.words.includes(wordId) ? p : { ...p, words: [...p.words, wordId] }));
-}
-
-/** Level finished: the place is restored (the map animates it once). */
-export function completeLevel(level: number) {
-  updateLevel(level, (lp) => (lp.done ? lp : { ...lp, done: true, restoreSeen: false }));
-}
-
-export function markRestoreSeen(level: number) {
-  updateLevel(level, (lp) => ({ ...lp, restoreSeen: true }));
+  setState((s) => ({ ...s, learnerId: null, screen: 'world', sessionStart: null }));
 }
 
 // ───────────── teacher + presenter ─────────────
@@ -318,26 +336,18 @@ export function resetDemo() {
   emit();
 }
 
-/** Clear Level 1 for the learner who is logged in (plaza goes back to faded). */
-export function resetLevel(level: number) {
+/** Start the game over for whoever is logged in. */
+export function resetGame() {
   const id = state.learnerId;
   if (!id) return;
   clearRecordings();
   setState((s) => {
     const p = getProgress(s, id);
-    const levels = { ...p.levels };
-    delete levels[level];
-    const lv = getLevel(level);
-    const levelWords = lv ? lv.scenes.flatMap((sc) => (sc.kind === 'word' ? [sc.word.id] : [])) : [];
-    return {
-      ...s,
-      activeLevel: null,
-      progress: { ...s.progress, [id]: { ...p, levels, words: p.words.filter((w) => !levelWords.includes(w)) } },
-    };
+    return { ...s, screen: 'world', progress: { ...s.progress, [id]: { ...p, game: newGame(), answers: {} } } };
   });
 }
 
-/** Log in the sample learner, who is halfway through Level 1. */
+/** Log in the sample learner (Quests 1–2 done, Quest 3 started). */
 export function loadSampleLearner() {
   clearRecordings();
   setState((s) => {
@@ -348,8 +358,22 @@ export function loadSampleLearner() {
   login(SAMPLE_LEARNER_ID);
 }
 
-/** Presenter shortcut: log in the first demo learner and go straight to the map. */
+/** Presenter shortcut: log in the first demo learner and go straight into the world. */
 export function skipLogin() {
   clearRecordings();
   login(demoLearners[0].id);
+}
+
+/** Presenter shortcut: start the Kite Day race with sample upgrades. */
+export function startFinaleDemo() {
+  if (!state.learnerId) login(demoLearners[0].id);
+  updateGame((g) => ({
+    ...g,
+    introSeen: true,
+    gateOpen: true,
+    upgrades: ['frame', 'balance', 'longString', g.choice === 'keep' ? 'ribbon' : 'nonoy'],
+    words: words.map((w) => w.id),
+    choice: g.choice ?? 'share',
+  }));
+  setScreen('race');
 }

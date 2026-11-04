@@ -7,7 +7,7 @@ import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'nod
 import { join } from 'node:path';
 
 const out = 'dist-preview';
-execSync(`npx vite build --base ./ --outDir ${out} --emptyOutDir`, {
+execSync(`npx vite build --mode single --base ./ --outDir ${out} --emptyOutDir`, {
   stdio: 'inherit',
   env: { ...process.env, VITE_HASH_ROUTES: '1' },
 });

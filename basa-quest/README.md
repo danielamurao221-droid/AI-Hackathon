@@ -1,42 +1,45 @@
 # Basa Quest (demo prototype)
 
-A phone-first story game in Filipino and English for Grade 3 readers. **Reading is how you win:**
-every step needs the child to read (or listen to) a short clue and then *do* something with it.
-
-The idea: **help a neighbour, then rebuild the barangay.** In Level 1, the child helps Tala get
-ready for Kite Day. Finishing the level restores the faded plaza on the barangay map.
+A small top-down adventure game in Filipino and English for Grade 3 readers. The child walks
+Tala around her barangay, talks to neighbours, reads short clues, finds the right things,
+upgrades a kite, and flies it in the Kite Day race. **Reading is how you win:** every quest
+needs the clue to be read or heard.
 
 > **This is a clickable prototype for a Design Thinking project, not a production system.**
 > It uses fictional sample data only. There is no backend, no accounts, no analytics and no
-> outside network requests. All story and question text is **draft, `reviewed: false`** (see below).
+> outside network requests. All story text is **draft, `reviewed: false`** (see below).
 
 **How Might We** make sure every struggling Grade 3 reader gets regular practice matched to their
 level, even when teachers are stretched and help at home is limited?
 
-## How the game works
+## The game
 
-| Loop | What happens |
-| --- | --- |
-| About 30 seconds | Read or hear a short clue → do something (tap a place, place a part, tap a sentence) → see the result straight away |
-| About 10 minutes | Solve one neighbour's problem (7 scenes) → restore a place in the barangay |
-| Long term | Restore places, meet new neighbours, collect words in the Word Notebook |
+**Loop:** explore → talk to a neighbour → read the quest → find the right place or item →
+upgrade the kite → try the Kite Day race → come back for more upgrades if needed.
 
-**Level 1: Ang Pulang Papel / The Red Paper**
-
-| # | Scene | Game type | Reading is needed because… |
+| Quest | What the child does | Why reading is needed | Reward |
 | --- | --- | --- | --- |
-| 1 | Kite Day | Do what the text says (cards) | The day is only in Tala's words |
-| 2 | Find the supplies | Do what the text says (map) | The map has no labels; the clue says *blue roof* and *mango tree* |
-| 3 | Build the kite | Do what the text says (build) | Lolo Ben's note says which stick, where, and how many folds |
-| 4 | Find the proof | Find the proof | The child taps the diary sentence that answers Nonoy |
-| 5 | New word: *sobra* | Use a new word | The task only makes sense if you know *sobra* means "more than you need" |
-| 6 | What should Tala do? | Decide + explain aloud | Both choices are allowed and lead to different dialogue; then "Bakit?" |
-| 7 | Kite Day! | Payoff | Kites fly, the plaza is restored, the word goes in the notebook |
+| Start | Read Tala’s worry about her old kite | The store is described only as “the one with a blue roof” | – |
+| 1 · Aling Nena’s Note | Collect 3 items for Lolo Ben, bring them to his workshop | The note gives details (long, not short; red; small jar). Look-alikes are on the map: short bamboo, blue paper, soy sauce, a slipper | **Strong Frame** (kite can take more bumps) + word *matibay* |
+| 2 · Lolo Ben’s Build | Build the kite on the workbench (tap or drag parts), then test flight | Lolo Ben’s written steps say which stick, where, and how many folds | **Better Balance** (easier steering, less wobble, gusts hurt less) + word *pantay* |
+| 3 · The Missing String | Ask Nonoy, Aling Nena and Kuya Jun; find the string; tap the clue that proves it; work out how much is *sobra* | Only the clues say where Muning the cat naps | **Long String** (climbs faster and higher) + word *sobra* |
+| Nonoy’s Choice | Share or keep the extra paper, then answer Nonoy’s “Bakit?” aloud | Both choices are fine and lead to different dialogue; the opinion is never graded | Share → Nonoy shouts a warning before one big gust. Keep → one more tail ribbon (one more bump) |
+| Kite Day race | Steer the kite to 100 m, avoid birds and gusts, fly through the right word gate | Word gates show a meaning from the Word Notebook; the race **pauses** while the child reads | Winning restores the plaza (animation + music) |
 
-**Rewards.** A kite ribbon for solving scenes 2–5 (never for pressing Continue), a Word Notebook
-entry, and one barangay piece (the plaza) for finishing the level. There are no timers, lives,
-streaks, random prizes, scores or rankings. A wrong answer gives a clue-based hint and another try.
-"Next" only appears after a scene is solved. Explaining aloud earns no reward: it is a conversation.
+**No markers.** There are no arrows or destination markers. After **2** wrong tries the game offers
+one clue-based hint with Makinig. After **4**, a soft sparkle appears near the target so no child
+gets stuck. (Change these in `src/config.ts`: `HINT_AFTER`, `SPARKLE_AFTER`.)
+
+**Failing is safe.** Wrong items get a funny reaction and go back where they were. A wobbly test
+flight just wobbles. In the race, a crash shows a tip and an instant **Try again**; nothing is lost.
+A kite with no upgrades can try the race but will find it hard (2 bumps, slow climb, more drift).
+
+**Rewards** are kite parts, tail ribbons and Word Notebook entries. There are no timers on reading,
+no streaks, random prizes, rankings, ads or chat. The race lasts at most 60 seconds, but word
+gates wait while the child reads.
+
+**Notebooks.** The Quest Notebook keeps every clue, in story order, with Makinig on each line.
+The Word Notebook keeps *matibay*, *pantay* and *sobra*, with meanings and examples.
 
 ## Run it
 
@@ -52,186 +55,156 @@ npm run build:preview  # one self-contained HTML file: preview/basa-quest.html
 npm run audio:list     # every audio file the game looks for, with its text
 ```
 
-## Demo script (about 5 minutes)
+**Controls:** on-screen joystick (bottom left) and action button (bottom right), or arrow keys /
+WASD to move and Space / Enter to act. In the race, steer with the joystick, arrow keys, or by
+touching and dragging on the sky.
 
-1. Open the round **Demo** button (bottom right) → **Skip login → map (Learner 01)**.
-   (Or log in normally: class code **DEMO123**, pick a learner, tap the two pictures in the hint.)
-2. On the barangay map, the plaza is faded. Tap it, or tap **Simulan / Start**.
-3. Play the 7 scenes. Try a wrong answer to see the hint. Switch **Filipino / English** at any time.
-4. In scene 6, choose what Tala does, then explain aloud (or **Tell a partner**).
-5. Watch the kites fly, tap **Back to the barangay**, and see the plaza come back to colour.
-6. Demo button → **Teacher View** → Learner 01 shows "Level 1 done". Tap the row to see hints
-   used per skill, proof tries, the choice for Nonoy, and how the child explained.
+## Demo script (about 6 minutes)
 
-### Presenter controls (the round Demo button)
+1. Demo button (round, top right) → **Skip login → game (Learner 01)**.
+2. Read Tala’s intro, then walk to the store with the blue roof and talk to Aling Nena.
+3. Pick up a wrong item on purpose (the soy sauce), bring it to Lolo Ben and hear his reaction.
+4. Collect the right items, build the kite on the workbench, and watch the test flight.
+5. Demo button → **Start at the Kite Day race (sample upgrades)**, fly through a word gate.
+6. Demo button → **Teacher View**, open Learner 01.
 
-| Control | What it does |
+| Presenter control | What it does |
 | --- | --- |
 | Student View / Teacher View | Switch between `/` and `/teacher` |
-| Skip login → map (Learner 01) | Logs in Learner 01 and opens the barangay map |
-| Show sample learner (Learner 07) | A learner halfway through Level 1 (2 ribbons, some hints used) |
-| Reset Level 1 (current learner) | Clears Level 1 for whoever is logged in; the plaza fades again |
+| Skip login → game (Learner 01) | Logs in Learner 01 and opens the barangay |
+| Show sample learner (Learner 07) | Quests 1–2 done, Quest 3 started, one race tried |
+| Start at the Kite Day race (sample upgrades) | Race with Strong Frame, Better Balance, Long String |
+| Reset game (current learner) | Starts the game over for whoever is logged in |
 | Reset demo data | Clears all progress on this device (asks to confirm on the page) |
+
+## Tech
+
+- React + TypeScript + Vite, static site. React shows all text (speech, notes, notebooks, panels),
+  so switching Filipino/English never restarts the game.
+- **Phaser 3.90.0** (pinned exactly, bundled locally) draws the world and the race. It is
+  **lazy-loaded** only after a student logs in (about 350 KB gzipped); login and the teacher
+  dashboard stay small.
+- All art is drawn with code at startup (`src/adventure/art.ts`). No image, sprite, font or audio files.
+- Music and sound effects are made with the Web Audio API (`src/lib/music.ts`, `src/lib/sfx.ts`).
+  The mute button silences both. Animations respect “reduce motion”.
+- Progress is saved in `localStorage`, with an in-memory fallback if storage is blocked.
+
+```
+src/
+  adventure/
+    GameHost.tsx      game screen: HUD, controls, dialogue, notebooks, race overlay (lazy-loaded)
+    WorldScene.ts     the barangay: map, collisions, Tala, neighbours, items, sparkles, plaza restore
+    RaceScene.ts      Kite Day race: birds, gusts, word gates, upgrades
+    director.ts       quest logic: who says what, wrong tries, hints, rewards
+    art.ts            all textures, drawn with code
+    bus.ts            events + joystick input shared by Phaser and React
+    Controls.tsx      joystick + action button
+    Notebooks.tsx     Quest Notebook, Word Notebook, bag
+    panels/           kite workbench, proof, "sobra" task, Nonoy's choice, explain aloud
+  content/
+    adventure.ts      ALL story text, both languages, both bands (reviewed: false)
+    ui.ts             buttons and messages (reviewed: false)
+  screens/            Login, Teacher
+  lib/                store, storage fallback, sound, music, audio paths, class data
+```
 
 ## Deploy to Vercel
 
-This is a static Vite site. `vercel.json` sends every route (like `/teacher`) to `index.html`.
+1. Push to GitHub. In Vercel: **Add New → Project**, import the repo.
+2. If the app is inside a bigger repo, set **Root Directory** to `basa-quest`.
+3. Framework **Vite**, build `npm run build`, output `dist`. No environment variables.
 
-1. Push this folder to GitHub.
-2. In Vercel: **Add New → Project**, import the repo.
-3. If the app is inside a bigger repo, set **Root Directory** to `basa-quest`.
-4. Framework preset **Vite**, build command `npm run build`, output directory `dist`. Deploy.
+Or: `cd basa-quest && npx vercel --prod`. `vercel.json` sends `/teacher` to `index.html`.
 
-Or with the CLI: `cd basa-quest && npx vercel --prod`. No environment variables are needed.
-
-**Moving the app into its own GitHub repo** (keeps history):
+To move the app into its own repo (keeps history):
 
 ```bash
-# from the root of the current repo
 git subtree split --prefix=basa-quest -b basa-quest-only
 git push git@github.com:<your-account>/basa-quest.git basa-quest-only:main
 ```
 
----
-
 ## Edit the content
 
-| File | What is in it |
-| --- | --- |
-| `src/content/level1.ts` | All Level 1 scenes: clues, dialogue, answers, hints, praise |
-| `src/content/ui.ts` | Buttons, instructions and messages |
-| `src/content/barangay.ts` | Places on the map, who lives there, greetings, locked places |
-| `src/config.ts` | App name (`APP_NAME`), class code, sample learner, session length |
-| `src/data/demoClass.ts` | The 30 fictional learners, skill names, teacher tips |
+All story text is in **`src/content/adventure.ts`**. Each line looks like:
 
-Tips for `level1.ts`:
+```ts
+ln('q1-note-3', 'lolo', undefined, {
+  A: { fil: '2. Ang papel na kulay pula.', en: '2. The paper that is red.' },
+  B: { fil: '2. Ang papel na kasingpula ng sili.', en: '2. The paper that is as red as a chili.' },
+}),
+```
 
-- Each scene has a `kind` that picks the game type (types are described in `src/types.ts`).
-- Text written as `{ A: {...}, B: {...} }` differs by reading band. **Band A** = shorter sentences
-  and easier words; **Band B** = a little longer and richer. Keep the story and answers the same.
-- Keep each clue to 1–3 short sentences.
-- Every line has an `id`. It is also its audio file name, so don't reuse ids.
-- `answer` is the id of the correct target, sentence or option. `hints` has one entry per
-  wrong choice plus `default`.
-- Wrap a word in `[[double brackets]]` to highlight it (used for the new word).
-
-### Reusable game types
-
-Each type is one component in `src/game/` that reads its data from the content file.
-
-| `kind` | Component | Used in Level 1 |
-| --- | --- | --- |
-| `pick` | Do what the text says: tap the right place (map) or card | Scenes 1–2 |
-| `build` | Do what the text says: follow written steps (tap or drag parts) | Scene 3 |
-| `proof` | Find the proof: tap the sentence that answers the question | Scene 4 |
-| `word` | Use a new word: meet it in the story, then use its meaning | Scene 5 |
-| `decide` | Decide with consequences: each option has its own dialogue, then explain | Scene 6 |
-| `explain` | Explain aloud on its own (record or tell a partner) | inside scene 6 |
-| `order` | Put events in order | ready for later levels |
-| `payoff` | End of level: kites, restored place, praise from what the child did | Scene 7 |
-
-To add Level 2 later: write `src/content/level2.ts`, add it to `levels` in
-`src/content/index.ts`, give a place on the map `level: 2`, and raise `PLAYABLE_LEVELS`.
+- The first value is the line id (also its audio file name). Don't reuse ids.
+- `{ A, B }` = different wording per reading band. Use a plain `{ fil, en }` when both bands share it.
+- Keep lines to 1–3 short sentences. Wrap a word in `[[ ]]` to highlight it.
+- Items on the map and what the list needs: `items` and `q1Needs`. Item positions: `ITEM_SPOTS`
+  in `src/adventure/WorldScene.ts`.
+- Word gate words and their decoys: `words`.
+- Race course (birds, gusts, gates) and difficulty: top of `src/adventure/RaceScene.ts`.
 
 ## Add audio
 
-Put MP3 files in `public/audio/`. No code changes are needed. Until a file exists, the
-**Makinig / Listen** button shows "Audio coming soon". The app never uses text-to-speech.
+Put MP3 files in `public/audio/`. No code changes are needed. Until a file exists, **Makinig /
+Listen** shows “Audio coming soon”. The app never uses text-to-speech.
 
 ```
 public/audio/{fil|en}/level-1/band-{a|b}/{line-id}.mp3   # text that differs by band
 public/audio/{fil|en}/level-1/{line-id}.mp3              # text shared by both bands
 ```
 
-Hints and "correct!" messages use `{scene}-hint-{key}` and `{scene}-ok` (for example
-`supplies-hint-bakery`, `build-hint-step2`, `proof-ok`). The second clue in the supplies scene
-uses `supplies-r2-…`.
-
-**Get the full recording list** with the exact text for each file:
-
 ```bash
-npm run audio:list > audio-list.tsv   # 154 files for Level 1; opens in Excel or Google Sheets
+npm run audio:list > audio-list.tsv   # 218 files, with the exact text to read
 ```
-
-Record slowly and warmly. Mono 64 kbps MP3 keeps files small for mobile data.
 
 ## Teacher dashboard (`/teacher`)
 
-Each Level 1 scene gives evidence for one skill:
-
-| Scene | Skill on the dashboard |
+| Game activity | Dashboard skill |
 | --- | --- |
-| Find the supplies, Build the kite | Word reading & directions |
-| Find the proof | Understanding details |
-| New word | Vocabulary |
-| Decide and explain | Explaining why |
+| Quest 1 (collect the right items) | Following details |
+| Quest 2 (build from the steps) | Following directions |
+| Quest 3 (find the string, pick the proving clue) | Understanding & proof |
+| Word gates in the race, and the “sobra” task | Vocabulary |
+| Nonoy’s Choice | Explaining why |
 
-For a learner who played on the device, the detail view shows hints used per skill, whether the
-proof sentence was found on the first try, the choice made for Nonoy, and whether the explanation
-was recorded, told to a partner, or skipped. **Audio is never stored or shown.** Skill percentages
-mix the fake class data with real first-try results from the app.
+For a learner who played on this device, the detail view shows each quest’s status, retries and
+hints used, the choice for Nonoy, whether the explanation was recorded or told to a partner (or
+skipped), race tries / crashes / best height, and word gates right. **Audio is never stored or shown.**
 
 ## Privacy and child safety (as built)
 
-- Fictional learners only ("Learner 01"–"Learner 30", IDs `DEMO-0001`…). No real names, LRNs,
-  birthdays, photos or contact details are asked for or stored.
-- Login uses a class code plus a 2-picture password. No typed passwords or LRNs.
-- Voice recordings stay in browser memory for the current page visit. They are never uploaded or
-  saved, and are cleared on log out, reset, or closing the tab.
-- No chat, leaderboards, outside links, sharing, analytics, cookies, ads, remote fonts or images.
-- Child screens never compare children and never show band or "low/slow/struggling" labels.
-- Teacher screens show "Demo prototype: sample data only".
-- Progress is saved in `localStorage`. If storage is blocked, the app keeps working in memory for
-  the visit and shows a small note.
-- Sound effects are generated in the browser (Web Audio API) and can be muted. Animations respect
-  "reduce motion".
+- Fictional learners only (“Learner 01”–“Learner 30”, IDs `DEMO-0001`…). No real names, LRNs,
+  birthdays, photos or contact details.
+- Login: class code + 2-picture password. No typed passwords or LRNs.
+- Voice recordings stay in browser memory for the current visit only; never uploaded or saved.
+  If the microphone is blocked, “Tell a partner” lets the child continue.
+- No chat, leaderboards, outside links, sharing, analytics, cookies, ads, remote fonts or assets.
+- Child screens never compare children and never show band or “low/slow/struggling” labels.
+- Teacher screens show “Demo prototype: sample data only”.
 
 ## Content review checklist (`reviewed: false`)
 
-Everything below is a draft written for this prototype. A Grade 3 teacher and a Filipino language
-reviewer must check it before use with children. Set `reviewed: true` in each file when approved.
+A Grade 3 teacher and a Filipino language reviewer must check all of this before use with
+children. Set `reviewed: true` when approved.
 
-Story: *Ang Pulang Papel / The Red Paper* (original). Tala saves her baon for red paper, builds
-a kite with Lolo Ben's help, has one sheet left over, and decides what to do when her younger
-neighbour Nonoy has no kite.
+- [ ] **`src/content/adventure.ts`**, Filipino and English, Band A and Band B:
+  - [ ] Intro (does “blue roof” work as the only way to find the store?)
+  - [ ] Quest 1 note: are “long”, “red”, “small jar” enough to tell items apart? Band B uses
+        “longer than your arm” and “as red as a chili”: fair for Grade 3?
+  - [ ] Lolo Ben’s funny reactions to wrong items (kind, not mocking?)
+  - [ ] Quest 2 build steps and hints
+  - [ ] Quest 3 clues: does the reasoning (Nonoy saw the cat with string → Aling Nena says the cat
+        naps under the boat) make sense? Is Aling Nena’s clue clearly “the proof”?
+  - [ ] The “sobra” task (15 − 10 = 5 arm-lengths): right level of maths for Grade 3?
+  - [ ] Nonoy’s Choice: both paths, both “Bakit?” prompts and sentence starters
+  - [ ] Race lines, word gate meanings and decoy words (*malambot*, *tagilid*, *kulang*)
+- [ ] **`src/content/ui.ts`**: buttons, instructions, microphone and partner messages
+- [ ] Natural Filipino and forms of address (“Ate Tala”, “apo”, “Aling Nena”, “Kuya Jun”)
+- [ ] Teacher text: `skillTips` and `skillSource` in `src/data/demoClass.ts`
 
-- [ ] **`src/content/level1.ts`: all 7 scenes**, Band A and Band B, Filipino and English
-  - [ ] Scene 1 clues and the day cards
-  - [ ] Scene 2 clues (blue-roof store, mango tree) and every hint
-  - [ ] Scene 3 Lolo Ben's 4 steps (are they clear enough to follow with no pictures?) and hints
-  - [ ] Scene 4 diary sentences (Band B has an extra distractor about candy) and hints
-  - [ ] Scene 5 teaching sentence for *sobra / extra*, the counting task and hints
-  - [ ] Scene 6 situation, both choices, both dialogue paths, both "Bakit?" prompts and sentence starters
-  - [ ] Scene 7 endings for each choice, and the praise lines
-- [ ] **`src/content/ui.ts`**: buttons, instructions, microphone and "Tell a partner" messages
-- [ ] **`src/content/barangay.ts`**: place names and greetings
-- [ ] Natural Filipino: aspect, word choice, and forms of address ("Ate Tala", "apo")
-- [ ] Is *sobra* the right target word, and is "extra" the right English pair?
-- [ ] Is the counting task in scene 5 fair for Grade 3?
-- [ ] Do Band A clues stay short enough (1–2 sentences) for the readers who need them?
-- [ ] Teacher-facing text: `skillTips` in `src/data/demoClass.ts` and `src/screens/Teacher.tsx`
+## Known limits
 
-## Project structure
-
-```
-basa-quest/
-  index.html, vite.config.ts, vercel.json, tsconfig.json
-  public/audio/                 recorded narration goes here (see README.txt)
-  scripts/                      build-preview.mjs, list-audio.mjs
-  src/
-    config.ts                   app name and settings
-    types.ts                    content model (scene types)
-    content/                    level1.ts, ui.ts, barangay.ts, index.ts, audioManifest.ts
-    data/demoClass.ts           30 fictional learners
-    game/                       LevelPlayer + one component per game type
-    screens/                    Login, BarangayMap, Teacher
-    components/                 characters, kite, icons, language switch, Listen button, presenter
-    lib/                        store, storage fallback, sound effects, audio paths, class data
-```
-
-## Known limits of the prototype
-
-- Only Level 1 has content. Other places and levels are locked and marked "coming soon".
+- One game area (Level 1). Other neighbours and levels are locked (“coming soon”).
 - The teacher dashboard is in English only.
-- Data lives on one device. A teacher on another phone will not see a learner's progress.
-- Speech is not analysed. The explain-aloud step is never graded.
+- Data lives on one device.
+- Test hooks: adding `?e2e=1` to the URL exposes small helpers (`window.__bqWorld`,
+  `window.__bqRace`) used by automated tests. They do nothing otherwise.
