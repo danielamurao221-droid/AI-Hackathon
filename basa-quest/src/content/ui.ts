@@ -44,7 +44,7 @@ export const upgradeText: Record<UpgradeId, { name: Bi; effect: Bi }> = {
   frame: { name: { fil: 'Matibay na Balangkas', en: 'Strong Frame' }, effect: { fil: 'Mas matatag, hindi agad bumabagsak', en: 'Steadier, harder to knock down' } },
   balance: { name: { fil: 'Mas Magandang Balanse', en: 'Better Balance' }, effect: { fil: 'Mas madaling iliko, mas kaunting uga', en: 'Easier to steer, less wobble' } },
   longString: { name: { fil: 'Mahabang Tali', en: 'Long String' }, effect: { fil: 'Mas mabilis at mas mataas na lipad', en: 'Climbs faster and higher' } },
-  ribbon: { name: { fil: 'Dagdag na Laso', en: 'Extra Tail Ribbon' }, effect: { fil: 'Kaya ang isa pang tama', en: 'Can take one more bump' } },
+  ribbon: { name: { fil: 'Dagdag na Laso', en: 'Extra Tail Ribbon' }, effect: { fil: 'Isang makulay na laso sa buntot', en: 'A colourful ribbon on the tail' } },
   nonoy: { name: { fil: 'Kasama si Nonoy', en: 'Nonoy is with you' }, effect: { fil: 'Sisigaw siya bago ang isang malakas na hangin', en: 'He shouts before one big gust' } },
 };
 

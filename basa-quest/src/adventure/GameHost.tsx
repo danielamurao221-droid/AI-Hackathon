@@ -108,7 +108,7 @@ export default function GameHost() {
         window.setTimeout(() => setRace((r) => ({ ...r, warn: false })), 3200);
       }),
       bus.on('race:end', (p) => {
-        const d = p as { result: 'win' | 'crash' | 'low'; h: number };
+        const d = p as { result: RaceResult; h: number };
         if (d.result === 'win') playMusic('win');
         setRace((r) => ({ ...r, stage: 'end', result: d.result, h: d.h, gate: undefined }));
       }),
@@ -370,8 +370,11 @@ interface RaceUI {
   gate?: { wordId: string; correct: 'left' | 'right' };
   gateOk?: boolean;
   warn?: boolean;
-  result?: 'win' | 'crash' | 'low';
+  result?: RaceResult;
 }
+
+/** string = the kite stopped at the string limit (no Long String yet). */
+type RaceResult = 'win' | 'crash' | 'low' | 'string';
 
 function RaceMeter({ h, strength, max }: { h: number; strength: number; max: number }) {
   const { t } = useT();
@@ -458,7 +461,15 @@ function RaceOverlay({
               </button>
             </>
           )}
-          {race.result !== 'win' && (
+          {race.result === 'string' && (
+            <>
+              <Bubble line={story.raceString} level={1} />
+              <button type="button" className="btn btn-primary btn-block" onClick={onBack} data-testid="race-back" autoFocus>
+                {t(ui.backToBarangay)}
+              </button>
+            </>
+          )}
+          {(race.result === 'crash' || race.result === 'low') && (
             <>
               <Bubble line={race.result === 'crash' ? story.raceCrash : story.raceLow} level={1} />
               <p className="muted center">{t(ui.bestHeight, { n: Math.max(race.h, g.finale.best) })}</p>

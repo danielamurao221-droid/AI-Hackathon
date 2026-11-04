@@ -252,6 +252,12 @@ button.hl-word.tappable {
   background: var(--bg); box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 20; min-height: 60px;
 }
 .game-hud .lang-switch button { padding: 0 8px; }
+.game-hud .lang-switch.compact { padding: 2px; }
+.game-hud .lang-switch.compact button { min-width: 44px; padding: 0 6px; font-size: 0.8rem; }
+@media (max-width: 400px) {
+  .game-hud { gap: 4px; padding-left: max(6px, env(safe-area-inset-left, 0px)); padding-right: max(6px, env(safe-area-inset-right, 0px)); }
+  .game-hud > .avatar { display: none; }
+}
 .game-stage { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
 .phaser-host { position: absolute; inset: 0; touch-action: none; }
 .phaser-host canvas { display: block; }
@@ -448,7 +454,8 @@ button.hl-word.tappable {
   background: var(--bg); border-radius: 22px; padding: 16px; box-shadow: 0 10px 40px rgba(0,0,0,.25);
   display: flex; flex-direction: column; gap: 12px; animation: popIn .2s ease-out both;
 }
-.gate-card { top: auto; bottom: 120px; transform: translateX(-50%); }
+.game-stage { --joy-h: 84px; }
+.gate-card { top: auto; bottom: calc(var(--joy-h) + 14px + env(safe-area-inset-bottom, 0px) + 24px); transform: translateX(-50%); max-height: calc(100% - var(--joy-h) - 60px); }
 .gate-meaning { font-size: 1.5rem; font-weight: 800; text-align: center; color: var(--teal-dark); }
 .race-goal { font-weight: 800; color: var(--coral); }
 .race-toast { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 8px 14px; border-radius: 14px; font-weight: 800; z-index: 12; text-align: center; max-width: calc(100% - 24px); }
@@ -589,6 +596,7 @@ button.hl-word.tappable {
   .build-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
   .joystick { width: 150px; height: 150px; }
   .joystick.horizontal { width: 190px; height: 96px; }
+  .game-stage { --joy-h: 96px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

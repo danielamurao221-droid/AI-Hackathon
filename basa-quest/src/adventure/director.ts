@@ -57,6 +57,7 @@ export function interact(id: string): Result {
     case 'jun':
       return talkJun(g);
     case 'race':
+      if (g.quests.q1.status !== 'done') return gateFix(g);
       return { steps: [{ t: 'line', line: story.raceAsk }, { t: 'panel', panel: 'raceIntro' }] };
     case 'boat':
       return searchBoat(g);
@@ -272,7 +273,14 @@ export function finishChoice(choice: 'share' | 'keep', mode: 'recorded' | 'partn
 
 // ───────────── Kuya Jun + the gate ─────────────
 
+/** The race stays locked until Quest 1 is done: Kuya Jun repeats where to go next. */
+function gateFix(g: GameProgress): Result {
+  const where = g.quests.q1.status === 'locked' ? story.gateWhereNena : story.gateWhereLolo;
+  return { steps: [{ t: 'line', line: story.gateFix }, { t: 'line', line: where }] };
+}
+
 function talkJun(g: GameProgress): Result {
+  if (g.quests.q1.status !== 'done') return gateFix(g);
   if (!g.gateOpen) {
     return {
       steps: [

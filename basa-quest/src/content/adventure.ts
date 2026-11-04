@@ -107,6 +107,25 @@ export const story = {
     fil: 'May saranggola ka? Kahit luma, puwede kang sumubok! Bukas na ang gate.',
     en: 'You have a kite? Even an old one can try! The gate is open now.',
   }),
+  // Before Quest 1 is done, Kuya Jun keeps the gate closed and repeats where to go.
+  gateFix: ln('gate-fix', 'jun', 'think', {
+    A: {
+      fil: 'Naku, luma at butas-butas pa ang saranggola mo! Ipaayos mo muna bago ang karera.',
+      en: 'Oh no, your old kite still has holes! Get it fixed before the race.',
+    },
+    B: {
+      fil: 'Naku, luma at butas-butas pa ang saranggola mo. Hindi pa iyan makalilipad nang mataas. Ipaayos mo muna, saka bumalik dito.',
+      en: 'Oh no, your old kite still has holes. It can’t fly high like that. Get it fixed first, then come back.',
+    },
+  }),
+  gateWhereNena: ln('gate-fix-nena', 'jun', 'think', {
+    fil: 'Sabi ni Lolo Ben, may sulat para sa iyo si Aling Nena. Asul ang bubong ng tindahan niya.',
+    en: 'Lolo Ben said Aling Nena has a note for you. Her store has a blue roof.',
+  }),
+  gateWhereLolo: ln('gate-fix-lolo', 'jun', 'think', {
+    fil: 'Dalhin mo kay Lolo Ben ang mga nasa listahan. May karatulang lagari ang pagawaan niya, katabi ng bahay ninyo.',
+    en: 'Bring the things on the list to Lolo Ben. His workshop has a saw sign, next to your house.',
+  }),
   raceAsk: ln('race-1', 'jun', 'happy', {
     A: {
       fil: 'Paliparin ang saranggola hanggang 100 metro. Iwasan ang mga ibon at malakas na hangin!',
@@ -436,6 +455,10 @@ export const story = {
   gateMiss: ln('race-gate-miss', undefined, undefined, { fil: 'Hindi iyon, pero tuloy pa rin ang lipad!', en: 'Not that one, but keep flying!' }),
   raceWin: ln('race-win', 'jun', 'wow', { fil: 'Naabot mo ang 100 metro! Panalo ang saranggola mo!', en: 'You reached 100 metres! Your kite made it!' }),
   raceCrash: ln('race-crash', 'tala', 'think', { fil: 'Bumagsak ang saranggola. Ayos lang, subukan ulit!', en: 'The kite fell. That’s okay, try again!' }),
+  raceString: ln('race-string', 'tala', 'think', {
+    fil: 'Naubos ang tali mo sa 40 m. Humanap ng mas mahaba!',
+    en: 'Your string ran out at 40 m. Find a longer one!',
+  }),
   raceLow: ln('race-low', 'tala', 'think', {
     fil: 'Hindi pa sapat ang taas. Subukan ulit, o humanap ng bagong piyesa sa barangay.',
     en: 'Not high enough yet. Try again, or find new kite parts around the barangay.',
@@ -570,6 +593,6 @@ export const notebookSections: { title: Bi; ids: string[] }[] = [
   },
   {
     title: { fil: 'Araw ng Saranggola', en: 'Kite Day' },
-    ids: [story.gateLocked, story.gateOpen, story.raceAsk, story.plazaRestored].map((l) => l.id),
+    ids: [story.gateLocked, story.gateFix, story.gateWhereNena, story.gateWhereLolo, story.gateOpen, story.raceAsk, story.raceString, story.plazaRestored].map((l) => l.id),
   },
 ];

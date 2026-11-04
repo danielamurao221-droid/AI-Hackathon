@@ -1,6 +1,10 @@
-// Kite Day race: a 45–60 second arcade climb. Steer the kite, avoid birds and gusts,
-// fly through the right word gate for a boost. Upgrades from the quests change how it flies.
-// Word gates pause the race while the child reads (reading is never timed).
+// Kite Day race: steer the kite, avoid birds and gusts, fly through the right word gate for a
+// boost. Upgrades decide the race:
+//   - Without Long String the string runs out at STRING_LIMIT metres (the kite cannot win).
+//   - With Long String (and Strong Frame + Better Balance from the earlier quests) the kite
+//     reaches 100 m in about 45–60 seconds of flying.
+//   - Nonoy's Choice never changes whether a child can win (the kept ribbon is decoration).
+// Word gates only use words already in the Word Notebook, and pause while the child reads.
 import Phaser from 'phaser';
 import { RACE_MAX_SECONDS, RACE_TARGET } from '../config';
 import { words } from '../content/adventure';
@@ -16,10 +20,22 @@ const RIBBON: Record<RibbonColor, number> = { sun: 0xf2b33d, teal: 0x2f9c8a, cor
 const BIRDS: [number, number, number][] = [
   [3, 0.25, 1], [6, 0.75, -1], [9, 0.5, 1], [12, 0.3, -1], [16, 0.7, 1], [19, 0.4, -1], [23, 0.62, 1], [26, 0.22, -1],
   [30, 0.8, 1], [34, 0.5, -1], [37, 0.3, 1], [41, 0.7, -1], [45, 0.42, 1], [48, 0.6, -1], [52, 0.5, 1], [56, 0.3, -1],
+  [60, 0.7, 1], [64, 0.4, -1], [68, 0.6, 1],
 ];
-const GUSTS: [number, number][] = [[8, 1], [20, -1], [32, 1], [44, -1]];
+const GUSTS: [number, number][] = [[8, 1], [20, -1], [32, 1], [44, -1], [56, 1]];
 const WARNED_GUST = 1;
-const GATES = [14, 29, 47];
+/** When word gates appear (one per word in the Word Notebook, at most three). */
+const GATES = [14, 29, 42];
+
+/** Climb speed in metres per second of flying. */
+const CLIMB_LONG_STRING = 1.75;
+const CLIMB_SHORT_STRING = 1.3;
+/** Without Long String the string runs out here. */
+export const STRING_LIMIT = 40;
+/** Extra metres for flying through the right word gate. */
+const GATE_BOOST = 6;
+/** Metres lost when a bird or gust knocks the kite. */
+const HIT_DROP = 3;
 const FALL_SPEED = 115; // px/s that obstacles drift down
 
 interface Ob {
@@ -70,6 +86,8 @@ export class RaceScene extends Phaser.Scene {
   private nextGate = 0;
   private warned = false;
   private hudTimer = 0;
+  /** Indexes into `words` for the words this child has learned (gates only use these). */
+  private gateWords: number[] = [];
   /** Size factor so the race feels the same on a phone and on a classroom TV. */
   private k = 1;
   private up = { frame: false, balance: false, longString: false, ribbon: false, nonoy: false };
@@ -90,7 +108,9 @@ export class RaceScene extends Phaser.Scene {
       ribbon: g.upgrades.includes('ribbon'),
       nonoy: g.upgrades.includes('nonoy'),
     };
-    this.maxStrength = 2 + (this.up.frame ? 2 : 0) + (this.up.ribbon ? 1 : 0);
+    // Strength comes from the quest upgrades only; Nonoy's Choice never changes it.
+    this.maxStrength = 2 + (this.up.frame ? 2 : 0);
+    this.gateWords = words.map((w, i) => (g.words.includes(w.id) ? i : -1)).filter((i) => i >= 0).slice(0, GATES.length);
     this.strength = this.maxStrength;
     this.h = 0;
     this.t = 0;
@@ -246,10 +266,10 @@ export class RaceScene extends Phaser.Scene {
       this.add.text(cx, 0, '', { fontFamily: 'system-ui, sans-serif', fontSize: `${Math.round(20 * this.k)}px`, fontStyle: 'bold', color: '#ffffff', stroke: '#155e54', strokeThickness: 4 }).setOrigin(0.5),
     );
     c.add([mk(W * 0.25), mk(W * 0.75), ...labels]);
-    this.gate = { y: 70, correct, wordIndex: index, objs: c, labels, waiting: true, passed: false };
+    this.gate = { y: 70, correct, wordIndex: this.gateWords[index], objs: c, labels, waiting: true, passed: false };
     this.relabel();
     sfx.word();
-    const w = words[index];
+    const w = words[this.gate.wordIndex];
     bus.emit('race:gate', { wordId: w.id, correct });
   }
 
@@ -274,7 +294,7 @@ export class RaceScene extends Phaser.Scene {
     const damage = kind === 'gust' && this.up.balance ? 0 : 1;
     if (damage === 0) return;
     this.strength -= damage;
-    this.h = Math.max(0, this.h - 4);
+    this.h = Math.max(0, this.h - HIT_DROP);
     this.invuln = 1.4;
     sfx.hit();
     if (!reducedMotion) this.cameras.main.shake(180, 0.008);
@@ -315,6 +335,15 @@ export class RaceScene extends Phaser.Scene {
       restoreSeen: g.restored ? g.restoreSeen : false,
     }));
     bus.emit('race:end', { result: 'win', h: RACE_TARGET });
+  }
+
+  /** Without Long String the kite cannot climb past STRING_LIMIT. */
+  private stringRanOut() {
+    this.ended = true;
+    sfx.hint();
+    this.tweens.add({ targets: this.kite, angle: { from: -8, to: 8 }, duration: 260, yoyo: true, repeat: 3 });
+    updateGame((g) => ({ ...g, finale: { ...g.finale, best: Math.max(g.finale.best, STRING_LIMIT) } }));
+    bus.emit('race:end', { result: 'string', h: STRING_LIMIT });
   }
 
   private tooLow() {
@@ -362,7 +391,12 @@ export class RaceScene extends Phaser.Scene {
 
     this.t += dt;
     this.invuln = Math.max(0, this.invuln - dt);
-    this.h += (this.up.longString ? 1.9 : 1.3) * dt;
+    this.h += (this.up.longString ? CLIMB_LONG_STRING : CLIMB_SHORT_STRING) * dt;
+    if (!this.up.longString && this.h >= STRING_LIMIT) {
+      this.h = STRING_LIMIT;
+      this.stringRanOut();
+      return;
+    }
 
     // course
     while (this.nextBird < BIRDS.length && this.t >= BIRDS[this.nextBird][0]) {
@@ -377,7 +411,7 @@ export class RaceScene extends Phaser.Scene {
       this.warned = true;
       bus.emit('race:warn');
     }
-    if (this.nextGate < GATES.length && this.t >= GATES[this.nextGate] && !this.gate) this.spawnGate(this.nextGate++);
+    if (this.nextGate < this.gateWords.length && this.t >= GATES[this.nextGate] && !this.gate) this.spawnGate(this.nextGate++);
 
     for (const o of this.obs) {
       o.obj.y += FALL_SPEED * this.k * dt;
@@ -415,7 +449,7 @@ export class RaceScene extends Phaser.Scene {
         const side = this.x < W / 2 ? 'left' : 'right';
         const ok = side === this.gate.correct;
         if (ok) {
-          this.h += 10;
+          this.h = this.up.longString ? this.h + GATE_BOOST : Math.min(STRING_LIMIT, this.h + GATE_BOOST);
           sfx.boost();
           this.burst.explode(reducedMotion ? 6 : 20, this.x, ky);
         } else sfx.hint();
@@ -457,6 +491,8 @@ export class RaceScene extends Phaser.Scene {
           this.invuln = 0;
           this.hit('bird');
         },
+        /** Tests only: no bumps, so timing can be measured. */
+        noHits: () => (this.invuln = 1e9),
       };
     } catch {
       /* ignore */

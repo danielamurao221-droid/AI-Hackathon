@@ -35,8 +35,9 @@ export const HINT_AFTER = 2;
 /** After this many wrong tries, a soft sparkle appears near the target. */
 export const SPARKLE_AFTER = 4;
 
-/** Kite Day race: height to reach (metres) and the longest a run can last (seconds). */
+/** Kite Day race: height to reach (metres), and a safety limit on flying time (seconds).
+ *  With all quest upgrades the kite reaches the target in about 45–60 s of flying. */
 export const RACE_TARGET = 100;
-export const RACE_MAX_SECONDS = 60;
+export const RACE_MAX_SECONDS = 75;
 
 export const STORAGE_KEY = 'basaquest.demo.v3';

@@ -371,6 +371,7 @@ export function startFinaleDemo() {
     ...g,
     introSeen: true,
     gateOpen: true,
+    quests: { ...g.quests, q1: { ...g.quests.q1, status: 'done' }, q2: { ...g.quests.q2, status: 'done' }, q3: { ...g.quests.q3, status: 'done' } },
     upgrades: ['frame', 'balance', 'longString', g.choice === 'keep' ? 'ribbon' : 'nonoy'],
     words: words.map((w) => w.id),
     choice: g.choice ?? 'share',

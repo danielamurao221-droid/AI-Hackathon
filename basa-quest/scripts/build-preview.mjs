@@ -9,7 +9,7 @@ import { join } from 'node:path';
 const out = 'dist-preview';
 execSync(`npx vite build --mode single --base ./ --outDir ${out} --emptyOutDir`, {
   stdio: 'inherit',
-  env: { ...process.env, VITE_HASH_ROUTES: '1' },
+  env: { ...process.env, VITE_HASH_ROUTES: '1', VITE_SHOW_PRESENTER: '1' },
 });
 
 const assets = join(out, 'assets');

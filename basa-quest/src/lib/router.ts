@@ -25,6 +25,20 @@ export function useRoute(): Route {
   return route;
 }
 
+/**
+ * The presenter (demo) button is hidden in normal student play. It shows only when the URL
+ * includes ?demo=1, or in the one-file preview build (VITE_SHOW_PRESENTER=1).
+ */
+export function showPresenter(): boolean {
+  if (import.meta.env.VITE_SHOW_PRESENTER === '1') return true;
+  try {
+    const v = new URLSearchParams(window.location.search).get('demo');
+    return v !== null && v !== '0';
+  } catch {
+    return false;
+  }
+}
+
 export function navigate(to: Route) {
   if (HASH_ROUTES) {
     window.location.hash = to === 'teacher' ? 'teacher' : '';

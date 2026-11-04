@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect } from 'react';
 import { PresenterBar } from './components/PresenterBar';
 import { ui } from './content/ui';
 import { useT } from './lib/i18n';
-import { useRoute } from './lib/router';
+import { showPresenter, useRoute } from './lib/router';
 import { useAppState } from './lib/store';
 import { Login } from './screens/Login';
 import { Teacher } from './screens/Teacher';
@@ -45,7 +45,7 @@ export default function App() {
   return (
     <>
       {route === 'teacher' ? <Teacher /> : <Student />}
-      <PresenterBar route={route} />
+      {showPresenter() && <PresenterBar route={route} />}
     </>
   );
 }

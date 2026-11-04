@@ -23,8 +23,15 @@ upgrade the kite → try the Kite Day race → come back for more upgrades if ne
 | 1 · Aling Nena’s Note | Collect 3 items for Lolo Ben, bring them to his workshop | The note gives details (long, not short; red; small jar). Look-alikes are on the map: short bamboo, blue paper, soy sauce, a slipper | **Strong Frame** (kite can take more bumps) + word *matibay* |
 | 2 · Lolo Ben’s Build | Build the kite on the workbench (tap or drag parts), then test flight | Lolo Ben’s written steps say which stick, where, and how many folds | **Better Balance** (easier steering, less wobble, gusts hurt less) + word *pantay* |
 | 3 · The Missing String | Ask Nonoy, Aling Nena and Kuya Jun; find the string; tap the clue that proves it; work out how much is *sobra* | Only the clues say where Muning the cat naps | **Long String** (climbs faster and higher) + word *sobra* |
-| Nonoy’s Choice | Share or keep the extra paper, then answer Nonoy’s “Bakit?” aloud | Both choices are fine and lead to different dialogue; the opinion is never graded | Share → Nonoy shouts a warning before one big gust. Keep → one more tail ribbon (one more bump) |
+| Nonoy’s Choice | Share or keep the extra paper, then answer Nonoy’s “Bakit?” aloud | Both choices are fine and lead to different dialogue; the opinion is never graded | Share → Nonoy shouts a warning before one big gust. Keep → one more tail ribbon (decoration). Neither changes whether a child can win |
 | Kite Day race | Steer the kite to 100 m, avoid birds and gusts, fly through the right word gate | Word gates show a meaning from the Word Notebook; the race **pauses** while the child reads | Winning restores the plaza (animation + music) |
+
+**The race is locked until Quest 1 is done.** Before that, Kuya Jun says the old kite needs
+fixing and repeats where to go next. **Upgrades decide the race:** without Long String the
+string runs out at 40 m (“Your string ran out at 40 m. Find a longer one!”), so reaching 100 m
+needs Quest 3. With all three quest upgrades the kite reaches 100 m in about 47 s of flying
+with every word gate right, or about 57 s with none. Word gates only use words already in the
+Word Notebook; with no words there are no gates.
 
 **No markers.** There are no arrows or destination markers. After **2** wrong tries the game offers
 one clue-based hint with Makinig. After **4**, a soft sparkle appears near the target so no child
@@ -32,7 +39,7 @@ gets stuck. (Change these in `src/config.ts`: `HINT_AFTER`, `SPARKLE_AFTER`.)
 
 **Failing is safe.** Wrong items get a funny reaction and go back where they were. A wobbly test
 flight just wobbles. In the race, a crash shows a tip and an instant **Try again**; nothing is lost.
-A kite with no upgrades can try the race but will find it hard (2 bumps, slow climb, more drift).
+The race needs Quest 1 (Strong Frame); 100 m needs Long String from Quest 3.
 
 **Rewards** are kite parts, tail ribbons and Word Notebook entries. There are no timers on reading,
 no streaks, random prizes, rankings, ads or chat. The race lasts at most 60 seconds, but word
@@ -60,6 +67,10 @@ WASD to move and Space / Enter to act. In the race, steer with the joystick, arr
 touching and dragging on the sky.
 
 ## Demo script (about 6 minutes)
+
+Open the app with **`?demo=1`** at the end of the address (for example
+`https://basa-quest-theta.vercel.app/?demo=1`) to show the round **Demo** button. Without it,
+students never see the presenter controls.
 
 1. Demo button (round, top right) → **Skip login → game (Learner 01)**.
 2. Read Tala’s intro, then walk to the store with the blue roof and talk to Aling Nena.
