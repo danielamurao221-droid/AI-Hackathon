@@ -142,10 +142,20 @@ ln('q1-note-3', 'lolo', undefined, {
 - Word gate words and their decoys: `words`.
 - Race course (birds, gusts, gates) and difficulty: top of `src/adventure/RaceScene.ts`.
 
-## Add audio
+## Voice (Makinig / Listen)
 
-Put MP3 files in `public/audio/`. No code changes are needed. Until a file exists, **Makinig /
-Listen** shows “Audio coming soon”. The app never uses text-to-speech.
+Every story line has a **Makinig / Listen** button. It tries, in order:
+
+1. **A recorded file** in `public/audio/` (always wins).
+2. **The phone's built-in voice**, if the device has one for that language. Filipino is only read
+   with a real Filipino/Tagalog voice (`fil-PH` / `tl-PH`); English prefers Philippine English.
+   It reads a little slower than normal. Turn this off with `PHONE_VOICE = false` in `src/config.ts`.
+3. Otherwise, a friendly “Audio coming soon” note.
+
+Many Android phones include a Filipino voice in **Settings → Text-to-speech → Google speech
+engine → Install voice data**. Phone voices vary by device, so for classroom use, add files.
+
+### Add recorded files
 
 ```
 public/audio/{fil|en}/level-1/band-{a|b}/{line-id}.mp3   # text that differs by band
@@ -153,8 +163,23 @@ public/audio/{fil|en}/level-1/{line-id}.mp3              # text shared by both b
 ```
 
 ```bash
-npm run audio:list > audio-list.tsv   # 218 files, with the exact text to read
+npm run audio:list > audio-list.tsv   # all 218 files, with who speaks and the exact text
 ```
+
+Record slowly and warmly. Mono 64 kbps MP3 keeps files small for mobile data.
+
+### Generate placeholder narration (on a computer with internet)
+
+```bash
+pip install edge-tts      # once (Python 3)
+npm run audio:generate    # makes every missing file; add "-- --dry-run" to preview, "-- --force" to remake
+```
+
+This uses free neural voices (Filipino `fil-PH` and Philippine English `en-PH`) through the
+unofficial `edge-tts` package, with a different pitch and speed for each character. Treat the
+files as **placeholders**: a teacher should listen to them, and any line can be replaced by a
+real recording at the same path. On Windows use `python scripts/generate_audio.py`. After
+generating, commit `public/audio` and redeploy (about 3 MB).
 
 ## Teacher dashboard (`/teacher`)
 

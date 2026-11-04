@@ -7,6 +7,9 @@ import { isBanded, pick } from './index';
 export interface AudioFile {
   path: string;
   text: string;
+  lang: Lang;
+  /** Who says the line (empty for narration), so the generator can pick a fitting voice. */
+  who: string;
 }
 
 const LANGS: Lang[] = ['fil', 'en'];
@@ -17,8 +20,9 @@ export function audioManifest(): AudioFile[] {
   for (const l of Object.values(allLines)) {
     for (const lang of LANGS) {
       if (isBanded(l.text)) {
-        for (const b of BANDS) out.push({ path: `public/audio/${lang}/level-1/band-${b.toLowerCase()}/${l.id}.mp3`, text: pick(l.text, b)[lang] });
-      } else out.push({ path: `public/audio/${lang}/level-1/${l.id}.mp3`, text: l.text[lang] });
+        for (const b of BANDS)
+          out.push({ path: `public/audio/${lang}/level-1/band-${b.toLowerCase()}/${l.id}.mp3`, text: pick(l.text, b)[lang], lang, who: l.who ?? '' });
+      } else out.push({ path: `public/audio/${lang}/level-1/${l.id}.mp3`, text: l.text[lang], lang, who: l.who ?? '' });
     }
   }
   return out.map((f) => ({ ...f, text: f.text.replace(/\[\[(.+?)\]\]/g, '$1') }));

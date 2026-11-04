@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "build:preview": "node scripts/build-preview.mjs",
-    "audio:list": "node scripts/list-audio.mjs"
+    "audio:list": "node scripts/list-audio.mjs",
+    "audio:generate": "python3 scripts/generate_audio.py"
   },
   "dependencies": {
     "phaser": "3.90.0",

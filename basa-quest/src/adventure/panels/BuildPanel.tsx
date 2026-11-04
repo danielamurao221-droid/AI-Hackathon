@@ -249,7 +249,7 @@ export function BuildPanel({ spec: scene, onSolved }: { spec: BuildSpec; onSolve
         <div className="note-card">
           <div className="note-head">
             <strong>{t(scene.noteTitle)}</strong>
-            <ListenButton srcs={scene.steps.map((s) => lineAudio(s.line, lang, 1, band))} compact />
+            <ListenButton srcs={scene.steps.map((s) => lineAudio(s.line, lang, 1, band))} texts={scene.steps.map((s) => tx(s.line.text))} compact />
           </div>
           <ol className="note-steps" lang={lang}>
             {scene.steps.map((s, i) => (

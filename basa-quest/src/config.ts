@@ -18,6 +18,12 @@ export const SAMPLE_LEARNER_ID = 'L07';
 export const AUDIO_BASE = `${import.meta.env.BASE_URL}audio`;
 export const AUDIO_EXT = 'mp3';
 
+/**
+ * When a recorded file is missing, read the line with the device's built-in voice.
+ * Filipino is only read if the device has a Filipino/Tagalog voice. Set to false to turn off.
+ */
+export const PHONE_VOICE = true;
+
 /** A gentle "time for a break" note appears after this many minutes. */
 export const SESSION_MINUTES = 10;
 

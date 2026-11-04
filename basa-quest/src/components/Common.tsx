@@ -3,6 +3,7 @@ import { charNames, ui } from '../content/ui';
 import { lineAudio, missingAudio } from '../lib/audio';
 import { useT } from '../lib/i18n';
 import { sfx } from '../lib/sfx';
+import { speak, stopSpeaking } from '../lib/speech';
 import { setLang, setMuted, useAppState } from '../lib/store';
 import { storageAvailable } from '../lib/storage';
 import type { Line, Mood } from '../types';
@@ -67,57 +68,75 @@ export function RichText({ text, onWord, wordLabel }: { text: string; onWord?: (
 }
 
 /**
- * Plays recorded files in order if they exist in public/audio. If the first file is
- * missing, shows a friendly "Audio coming soon" note instead. No text-to-speech.
+ * Plays recorded files in order if they exist in public/audio. When a file is missing, the
+ * matching text is read with the phone's built-in voice (if it has one for this language).
+ * With neither, shows a friendly "Audio coming soon" note.
  */
-export function ListenButton({ srcs, compact }: { srcs: string[]; compact?: boolean }) {
-  const { t } = useT();
-  const key = srcs.join('|');
+export function ListenButton({ srcs, texts, compact }: { srcs: string[]; texts?: string[]; compact?: boolean }) {
+  const { t, lang } = useT();
+  const key = srcs.join('|') + lang;
   const [state, setState] = useState<'idle' | 'playing' | 'missing'>('idle');
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const run = useRef(0);
 
   useEffect(() => {
-    setState(srcs.length && missingAudio.has(srcs[0]) ? 'missing' : 'idle');
+    setState('idle');
     return () => {
+      run.current += 1;
       audioRef.current?.pause();
       audioRef.current = null;
+      stopSpeaking();
     };
   }, [key]);
 
-  function playFrom(i: number) {
+  function playFrom(i: number, id: number) {
+    if (id !== run.current) return;
     const src = srcs[i];
     if (!src) {
       setState('idle');
       return;
     }
+    const next = () => playFrom(i + 1, id);
+    const fallback = () => {
+      if (id !== run.current) return;
+      const text = texts?.[i];
+      if (text && speak(text, lang, next)) return;
+      if (i === 0) setState('missing');
+      else next();
+    };
     if (missingAudio.has(src)) {
-      setState(i === 0 ? 'missing' : 'idle');
+      fallback();
       return;
     }
     try {
       const a = new Audio(src);
       audioRef.current = a;
+      let failed = false;
       const fail = () => {
+        if (failed) return;
+        failed = true;
         missingAudio.add(src);
-        if (audioRef.current === a) setState(i === 0 ? 'missing' : 'idle');
+        if (audioRef.current === a) fallback();
       };
       a.addEventListener('error', fail);
-      a.addEventListener('ended', () => audioRef.current === a && playFrom(i + 1));
+      a.addEventListener('ended', () => audioRef.current === a && next());
       a.play().catch(fail);
     } catch {
       missingAudio.add(src);
-      setState('missing');
+      fallback();
     }
   }
 
   function onClick() {
+    run.current += 1;
     if (state === 'playing') {
       audioRef.current?.pause();
+      stopSpeaking();
       setState('idle');
       return;
     }
     setState('playing');
-    playFrom(0);
+    playFrom(0, run.current);
   }
 
   const label = state === 'playing' ? t(ui.stopListening) : t(ui.listen);
@@ -173,7 +192,7 @@ export function Bubble({
         <p className="clue-text" lang={lang}>
           <RichText text={tx(line.text)} onWord={onWord} wordLabel={wordLabel} />
         </p>
-        <ListenButton srcs={[src]} />
+        <ListenButton srcs={[src]} texts={[tx(line.text)]} />
       </div>
     </div>
   );
@@ -189,7 +208,7 @@ export function Feedback({ kind, text, src, who = 'tala' }: { kind: 'hint' | 'go
         {kind === 'hint' && <strong>{t(ui.tryAgainHint)}</strong>}
         <p lang={lang}>{text}</p>
       </div>
-      <ListenButton srcs={[src]} compact />
+      <ListenButton srcs={[src]} texts={[text]} compact />
     </div>
   );
 }
