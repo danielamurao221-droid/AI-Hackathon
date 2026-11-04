@@ -1,12 +1,20 @@
-// Teacher dashboard (/teacher). English only. Demo data only.
+// Teacher dashboard (/teacher). English only. Demo data only. Never shows or stores audio.
 import { useEffect, useMemo, useState } from 'react';
-import { APP_NAME, PLAYABLE_LEVELS } from '../config';
-import { DemoBadge, Stars } from '../components/Common';
+import { APP_NAME } from '../config';
+import { DemoBadge } from '../components/Common';
 import { IconClose, IconSearch } from '../components/Icons';
 import { skillNames, skillTips } from '../data/demoClass';
-import { buildRows, levelLabel, NEED_CUTOFF, pct, SKILLS, timeAgo, type Row } from '../lib/classData';
+import { buildRows, choiceNames, explainNames, NEED_CUTOFF, pct, SKILLS, timeAgo, type Row } from '../lib/classData';
 import { setBand, setReviewed, useAppState } from '../lib/store';
 import type { Skill } from '../types';
+
+/** Which Level 1 scene gives evidence for each skill (shown to teachers). */
+const SKILL_SOURCE: Record<Skill, string> = {
+  wordReading: 'Find the supplies + Build the kite (following written directions)',
+  details: 'Find the proof',
+  vocabulary: 'New word: “sobra”',
+  explaining: 'Decide and explain',
+};
 
 function SkillChip({ skill }: { skill: Skill | null }) {
   if (!skill) return <span className="chip chip-ok">On track</span>;
@@ -32,6 +40,7 @@ export function Teacher() {
   const reviewedCount = needing.filter((r) => r.reviewedAt).length;
   const practiced = rows.filter((r) => r.sessionsThisWeek > 0).length;
   const avgSessions = rows.reduce((n, r) => n + r.sessionsThisWeek, 0) / rows.length;
+  const level1Done = rows.filter((r) => r.level1Done).length;
   const skillCounts = SKILLS.map((sk) => ({ sk, n: rows.filter((r) => r.helpSkill === sk).length }));
   const topSkill = [...skillCounts].sort((a, b) => b.n - a.n)[0];
 
@@ -60,12 +69,12 @@ export function Teacher() {
         <div className="summary-grid">
           <div className="stat"><b>{practiced}/30</b><span>practiced this week</span></div>
           <div className="stat"><b>{avgSessions.toFixed(1)}</b><span>avg. sessions per learner (goal 2–3)</span></div>
+          <div className="stat"><b>{level1Done}/30</b><span>finished Level 1 (plaza restored)</span></div>
           <div className="stat"><b>{needing.length}</b><span>may need extra help</span></div>
-          <div className="stat"><b>{topSkill.n > 0 ? skillNames[topSkill.sk] : '—'}</b><span>most common need</span></div>
         </div>
         <p className="t-summary">
-          Most learners are practicing. Start with the 5 learners below, then check
-          “{topSkill.n > 0 ? skillNames[topSkill.sk] : 'the full list'}” as a small-group focus during ARAL time.
+          Start with the 5 learners below. The most common need is “{topSkill.n > 0 ? skillNames[topSkill.sk] : '—'}”, a good
+          small-group focus for ARAL time.
         </p>
         <div className="skill-bars" aria-label="Learners needing help, by skill">
           {skillCounts.map(({ sk, n }) => (
@@ -82,7 +91,7 @@ export function Teacher() {
       <section className="t-section" aria-labelledby="help-h">
         <h2 id="help-h">Needs help this week</h2>
         <p className="muted">Top 5, based on first-try answers, sessions and last activity.{reviewedCount > 0 && ` ${reviewedCount} already reviewed.`}</p>
-        {helpList.length === 0 && <p className="card">Everyone on the list has been reviewed. 🎉</p>}
+        {helpList.length === 0 && <p className="card">Everyone on the list has been reviewed.</p>}
         <ol className="help-list">
           {helpList.map((r) => (
             <li key={r.learner.id} className="help-card">
@@ -135,7 +144,7 @@ export function Teacher() {
                 </span>
               </span>
               <span data-label="Sessions">{r.sessionsThisWeek}</span>
-              <span data-label="Level">{levelLabel(r)}</span>
+              <span data-label="Level">{r.levelLabel}</span>
               <span data-label="Band">Band {r.band}</span>
               <span data-label="Last">{timeAgo(r.lastActivity)}</span>
               <span data-label="Help"><SkillChip skill={r.helpSkill} /></span>
@@ -146,8 +155,8 @@ export function Teacher() {
       </section>
 
       <footer className="t-foot muted tiny">
-        Band A = shorter text, Band B = longer text. Learners never see their band. Word reading comes from the
-        teacher’s read-aloud check (demo numbers); the other skills come from first-try answers in the app.
+        Band A = shorter text and easier words, Band B = longer text. Learners never see their band. Skills come from
+        first-try answers in the app, mixed with demo numbers. Voice recordings are never saved or shown here.
       </footer>
 
       {open && <Detail row={open} onClose={() => setOpenId(null)} />}
@@ -157,10 +166,13 @@ export function Teacher() {
 
 function Detail({ row: r, onClose }: { row: Row; onClose: () => void }) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+  const a = r.activity;
 
   return (
     <div className="modal-bg" onClick={onClose}>
@@ -178,29 +190,59 @@ function Detail({ row: r, onClose }: { row: Row; onClose: () => void }) {
         <DemoBadge />
 
         <dl className="facts">
-          <div><dt>Current level</dt><dd>{levelLabel(r)}</dd></div>
+          <div><dt>Current level</dt><dd>{r.levelLabel}</dd></div>
           <div><dt>Sessions this week</dt><dd>{r.sessionsThisWeek}</dd></div>
           <div><dt>Last activity</dt><dd>{timeAgo(r.lastActivity)}</dd></div>
-          <div><dt>Stars</dt><dd>{r.stars} / {PLAYABLE_LEVELS * 3}</dd></div>
+          <div><dt>Kite ribbons</dt><dd>{r.ribbons} / 4</dd></div>
         </dl>
 
-        <h3>Levels</h3>
-        <ul className="lvl-stars">
-          {r.starsByLevel.map((n, i) => (
-            <li key={i}><span>Level {i + 1}</span><Stars count={n} size={18} /></li>
-          ))}
-        </ul>
+        <h3>Level 1 activity</h3>
+        {a ? (
+          <dl className="activity" data-testid="activity">
+            <div>
+              <dt>Hints used, by skill</dt>
+              <dd>
+                <ul className="hint-list">
+                  {SKILLS.filter((sk) => sk !== 'explaining').map((sk) => (
+                    <li key={sk}>
+                      <span>{skillNames[sk]}</span>
+                      <b>{a.hintsBySkill[sk] ?? '—'}</b>
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+            <div>
+              <dt>Proof sentence</dt>
+              <dd>
+                {a.proofTries === null
+                  ? 'Not reached yet'
+                  : a.proofTries === 0
+                    ? 'Found on the first try'
+                    : `Found after ${a.proofTries + 1} tries`}
+              </dd>
+            </div>
+            <div><dt>Choice for Nonoy</dt><dd>{a.choice ? choiceNames[a.choice] ?? a.choice : 'Not reached yet'}</dd></div>
+            <div><dt>Explanation</dt><dd>{a.explain ? explainNames[a.explain] : 'Not reached yet'}</dd></div>
+          </dl>
+        ) : (
+          <p className="muted small">{r.level1Done ? 'Finished Level 1 (sample data, no step-by-step record).' : 'Has not started Level 1 on this device yet.'}</p>
+        )}
 
         <h3>Skills (right on first try)</h3>
         <ul className="skill-detail">
           {SKILLS.map((sk) => (
-            <li key={sk} className={r.helpSkill === sk ? 'weak' : ''}>
+            <li key={sk} className={r.helpSkill === sk ? 'weak' : ''} title={SKILL_SOURCE[sk]}>
               <span>{skillNames[sk]}</span>
               <span className="skill-bar-track"><span className={`skill-bar-fill fill-${sk}`} style={{ width: pct(r.accuracy[sk]) }} /></span>
               <span>{pct(r.accuracy[sk])}</span>
             </li>
           ))}
         </ul>
+        <p className="tiny muted">
+          From Level 1: word reading &amp; directions = Find the supplies + Build the kite; understanding details = Find the
+          proof; vocabulary = New word; explaining why = Decide and explain.
+        </p>
 
         <div className="card soft">
           <strong>{r.helpSkill ? `Focus: ${skillNames[r.helpSkill]}` : 'On track'}</strong>

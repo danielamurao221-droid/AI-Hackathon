@@ -20,15 +20,29 @@ export const IconLock = ({ size = 24, className }: P) =>
     <rect x="5" y="10.5" width="14" height="10" rx="2.5" fill="currentColor" />
     <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" {...stroke} />
   </>);
-export const IconStar = ({ size = 24, className, filled = true }: P & { filled?: boolean }) =>
-  svg(size, className,
-    <path
-      d="M12 2.8l2.8 5.9 6.4.8-4.7 4.4 1.2 6.4L12 17.2l-5.7 3.1 1.2-6.4-4.7-4.4 6.4-.8z"
-      fill={filled ? '#f2b33d' : 'none'}
-      stroke={filled ? '#d99a1e' : 'currentColor'}
-      strokeWidth="1.6"
-      strokeLinejoin="round"
-    />);
+export const IconSoundOff = ({ size = 24, className }: P) =>
+  svg(size, className, <>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" />
+    <path d="M16 9.5l5 5M21 9.5l-5 5" {...stroke} />
+  </>);
+export const IconNotebook = ({ size = 24, className }: P) =>
+  svg(size, className, <>
+    <rect x="5" y="3" width="14" height="18" rx="2.5" fill="currentColor" />
+    <path d="M9 3v18" stroke="var(--card)" strokeWidth="1.6" />
+    <path d="M11.5 8h5M11.5 11.5h5" stroke="var(--card)" strokeWidth="1.6" strokeLinecap="round" />
+  </>);
+export const IconGive = ({ size = 24, className }: P) =>
+  svg(size, className, <>
+    <rect x="9" y="3" width="9" height="7" rx="1" fill="#d94a3a" transform="rotate(12 13 6)" />
+    <path d="M2 15h5l4 2h5a2 2 0 0 1 0 4H9" {...stroke} />
+    <path d="M7 14v7" {...stroke} />
+  </>);
+export const IconKeep = ({ size = 24, className }: P) =>
+  svg(size, className, <>
+    <path d="M5 9h14l-1.5 11h-11z" fill="currentColor" />
+    <path d="M9 9V7a3 3 0 0 1 6 0v2" {...stroke} />
+    <rect x="9" y="12" width="6" height="4" rx=".8" fill="#d94a3a" />
+  </>);
 export const IconTrophy = ({ size = 24, className }: P) =>
   svg(size, className, <>
     <path d="M7 3h10v5a5 5 0 0 1-10 0z" fill="#f2b33d" stroke="#c98b2b" strokeWidth="1.4" />

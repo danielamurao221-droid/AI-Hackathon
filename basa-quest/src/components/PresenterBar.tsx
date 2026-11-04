@@ -1,7 +1,8 @@
 // Small presenter control for demos. Not part of the real product.
 import { useState } from 'react';
 import { navigate, type Route } from '../lib/router';
-import { loadSampleLearner, resetDemo } from '../lib/store';
+import { findLearner } from '../data/demoClass';
+import { loadSampleLearner, resetDemo, resetLevel, skipLogin, useAppState } from '../lib/store';
 import { IconClose, IconSliders } from './Icons';
 
 export function PresenterBar({ route }: { route: Route }) {
@@ -9,6 +10,8 @@ export function PresenterBar({ route }: { route: Route }) {
   const [note, setNote] = useState<string | null>(null);
   // In-page confirmation (browser confirm() dialogs are blocked in some hosts).
   const [confirming, setConfirming] = useState(false);
+  const { learnerId } = useAppState();
+  const current = findLearner(learnerId);
 
   function flash(msg: string) {
     setNote(msg);
@@ -31,12 +34,35 @@ export function PresenterBar({ route }: { route: Route }) {
             type="button"
             className="btn btn-soft btn-block btn-sm"
             onClick={() => {
+              skipLogin();
+              navigate('student');
+              flash('Learner 01 logged in: barangay map');
+            }}
+          >
+            Skip login → map (Learner 01)
+          </button>
+          <button
+            type="button"
+            className="btn btn-soft btn-block btn-sm"
+            onClick={() => {
               loadSampleLearner();
               navigate('student');
-              flash('Learner 07 loaded: levels 1–2 done');
+              flash('Learner 07 loaded: halfway through Level 1');
             }}
           >
             Show sample learner (Learner 07)
+          </button>
+          <button
+            type="button"
+            className="btn btn-ghost btn-block btn-sm"
+            disabled={!current}
+            onClick={() => {
+              resetLevel(1);
+              navigate('student');
+              flash(`Level 1 reset for ${current?.name ?? ''}`);
+            }}
+          >
+            Reset Level 1{current ? ` (${current.name})` : ''}
           </button>
           {confirming ? (
             <div className="confirm-box" role="group" aria-label="Confirm reset">

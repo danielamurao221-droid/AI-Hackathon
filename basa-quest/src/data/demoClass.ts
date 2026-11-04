@@ -12,11 +12,11 @@ export interface DemoLearner {
   pictures: [PicId, PicId]; // picture password
   color: string; // avatar colour
   base: {
-    levelsDone: number; // 0-3
+    levelsDone: number; // 0 or 1 (Level 1 finished)
     sessionsThisWeek: number;
     daysSinceActive: number;
     /** Share of questions right on the first try, per skill (0-1).
-     *  wordReading comes from the teacher's read-aloud check, not the app. */
+     *  wordReading = word reading & following written directions (in-app scenes + teacher check). */
     accuracy: Record<Skill, number>;
     /** How many answers the accuracy above is based on (weight vs. live answers). */
     answered: number;
@@ -68,7 +68,7 @@ function build(): DemoLearner[] {
       pictures: pairs[(i * 7) % pairs.length],
       color: COLORS[i % COLORS.length],
       base: {
-        levelsDone: Math.min(3, Math.floor(rand() * 2.2 + strength * 1.6)),
+        levelsDone: rand() < 0.2 + strength * 0.45 ? 1 : 0,
         sessionsThisWeek: Math.floor(1 + rand() * 1.7 + strength * 1.2),
         daysSinceActive: Math.floor(rand() * rand() * 9),
         accuracy,
@@ -79,13 +79,13 @@ function build(): DemoLearner[] {
 
   // Fixed learners for a predictable demo.
   const l01 = list[0];
-  l01.base.levelsDone = 0; // fresh start: play levels 1 to 3 from the beginning
+  l01.base.levelsDone = 0; // fresh start: play Level 1 from the beginning
 
   const sample = list.find((l) => l.id === SAMPLE_LEARNER_ID)!;
   sample.band = 'A';
   sample.pictures = ['mango', 'cat'];
   sample.base = {
-    levelsDone: 2,
+    levelsDone: 0, // halfway through Level 1 (see seedProgress in lib/store.ts)
     sessionsThisWeek: 2,
     daysSinceActive: 1,
     accuracy: { wordReading: 0.78, vocabulary: 0.72, details: 0.7, explaining: 0.5 },
@@ -101,15 +101,15 @@ export function findLearner(id: string | null | undefined): DemoLearner | undefi
 }
 
 export const skillNames: Record<Skill, string> = {
-  wordReading: 'Word reading',
+  wordReading: 'Word reading & directions',
   vocabulary: 'Vocabulary',
   details: 'Understanding details',
   explaining: 'Explaining why',
 };
 
 export const skillTips: Record<Skill, string> = {
-  wordReading: 'Listen to them read one page aloud. Let them use the Listen button first, then read the same page.',
+  wordReading: 'Read Lolo Ben’s note with them, one step at a time. Ask them to point to the word that tells where each part goes.',
   vocabulary: 'Preview 2–3 story words before reading. Ask them to use each word in their own sentence.',
-  details: 'After each page, ask “Who? What? Where?” and let them point to the sentence in the story.',
+  details: 'After each clue, ask “Who? What? Why?” and let them point to the sentence that tells them.',
   explaining: 'Model the starter “I think… because…”. Pair them with a partner for the explain-aloud step.',
 };

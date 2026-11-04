@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { APP_NAME, CLASS_CODE } from '../config';
-import { pictureNames, ui } from '../content/story';
+import { pictureNames, ui } from '../content/ui';
 import { LangSwitch, StorageNotice } from '../components/Common';
 import { IconBack, IconBook, Picture } from '../components/Icons';
 import { demoLearners, findLearner, PICTURES } from '../data/demoClass';

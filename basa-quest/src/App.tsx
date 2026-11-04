@@ -2,16 +2,16 @@ import { useEffect } from 'react';
 import { PresenterBar } from './components/PresenterBar';
 import { useRoute } from './lib/router';
 import { useAppState } from './lib/store';
-import { Level } from './screens/Level';
-import { LevelMap } from './screens/LevelMap';
+import { LevelPlayer } from './game/LevelPlayer';
+import { BarangayMap } from './screens/BarangayMap';
 import { Login } from './screens/Login';
 import { Teacher } from './screens/Teacher';
 
 function Student() {
   const s = useAppState();
   if (!s.learnerId) return <Login />;
-  if (s.activeLevel) return <Level key={s.activeLevel} level={s.activeLevel} />;
-  return <LevelMap />;
+  if (s.activeLevel) return <LevelPlayer key={s.activeLevel} level={s.activeLevel} />;
+  return <BarangayMap />;
 }
 
 export default function App() {

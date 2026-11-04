@@ -1,10 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { missingAudio } from '../lib/audio';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { charNames, ui } from '../content/ui';
+import { lineAudio, missingAudio } from '../lib/audio';
 import { useT } from '../lib/i18n';
-import { setLang, useAppState } from '../lib/store';
+import { sfx } from '../lib/sfx';
+import { setLang, setMuted, useAppState } from '../lib/store';
 import { storageAvailable } from '../lib/storage';
-import { ui } from '../content/story';
-import { IconBack, IconSpeaker, IconStar, IconStop } from './Icons';
+import type { Line, Mood } from '../types';
+import { Character } from './Character';
+import { IconClose, IconSoundOff, IconSpeaker, IconStop } from './Icons';
 
 /** Filipino / English switch. Available on every child screen. */
 export function LangSwitch() {
@@ -21,58 +24,74 @@ export function LangSwitch() {
   );
 }
 
-export function TopBar({ onBack, title, backLabel }: { onBack?: () => void; title?: string; backLabel?: string }) {
+export function MuteButton() {
+  const { muted } = useAppState();
   const { t } = useT();
   return (
-    <header className="topbar">
-      {onBack ? (
-        <button type="button" className="icon-btn" onClick={onBack} aria-label={backLabel ?? t(ui.back)}>
-          <IconBack />
-        </button>
-      ) : (
-        <span className="topbar-spacer" />
-      )}
-      <div className="topbar-title">{title}</div>
-      <LangSwitch />
-    </header>
+    <button
+      type="button"
+      className="icon-btn"
+      aria-pressed={muted}
+      aria-label={muted ? t(ui.soundOn) : t(ui.soundOff)}
+      title={muted ? t(ui.soundOn) : t(ui.soundOff)}
+      onClick={() => {
+        setMuted(!muted);
+        if (muted) window.setTimeout(() => sfx.tap(), 0);
+      }}
+    >
+      {muted ? <IconSoundOff /> : <IconSpeaker />}
+    </button>
   );
 }
 
-export function Stars({ count, size = 22, max = 3 }: { count: number; size?: number; max?: number }) {
+/** Renders text, turning [[word]] into a highlighted word. */
+export function RichText({ text, onWord, wordLabel }: { text: string; onWord?: () => void; wordLabel?: string }) {
+  const parts = text.split(/\[\[(.+?)\]\]/g);
   return (
-    <span className="stars" aria-label={`${count} / ${max}`}>
-      {Array.from({ length: max }, (_, i) => (
-        <IconStar key={i} size={size} filled={i < count} className={i < count ? '' : 'star-empty'} />
-      ))}
-    </span>
+    <>
+      {parts.map((p, i) =>
+        i % 2 === 0 ? (
+          <span key={i}>{p}</span>
+        ) : onWord ? (
+          <button key={i} type="button" className="hl-word tappable" onClick={onWord} aria-label={wordLabel ? `${p}: ${wordLabel}` : p}>
+            {p}
+          </button>
+        ) : (
+          <mark key={i} className="hl-word">
+            {p}
+          </mark>
+        ),
+      )}
+    </>
   );
 }
 
 /**
- * Plays a recorded file if it exists in public/audio. If the file is missing,
- * shows a friendly "Audio coming soon" note instead. No text-to-speech.
+ * Plays recorded files in order if they exist in public/audio. If the first file is
+ * missing, shows a friendly "Audio coming soon" note instead. No text-to-speech.
  */
-export function ListenButton({ src, small }: { src: string; small?: boolean }) {
+export function ListenButton({ srcs, compact }: { srcs: string[]; compact?: boolean }) {
   const { t } = useT();
-  const [state, setState] = useState<'idle' | 'playing' | 'missing'>(missingAudio.has(src) ? 'missing' : 'idle');
+  const key = srcs.join('|');
+  const [state, setState] = useState<'idle' | 'playing' | 'missing'>('idle');
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    setState(missingAudio.has(src) ? 'missing' : 'idle');
+    setState(srcs.length && missingAudio.has(srcs[0]) ? 'missing' : 'idle');
     return () => {
       audioRef.current?.pause();
       audioRef.current = null;
     };
-  }, [src]);
+  }, [key]);
 
-  function onClick() {
-    if (state === 'playing') {
-      audioRef.current?.pause();
+  function playFrom(i: number) {
+    const src = srcs[i];
+    if (!src) {
       setState('idle');
       return;
     }
     if (missingAudio.has(src)) {
-      setState('missing');
+      setState(i === 0 ? 'missing' : 'idle');
       return;
     }
     try {
@@ -80,11 +99,10 @@ export function ListenButton({ src, small }: { src: string; small?: boolean }) {
       audioRef.current = a;
       const fail = () => {
         missingAudio.add(src);
-        if (audioRef.current === a) setState('missing');
+        if (audioRef.current === a) setState(i === 0 ? 'missing' : 'idle');
       };
       a.addEventListener('error', fail);
-      a.addEventListener('ended', () => audioRef.current === a && setState('idle'));
-      setState('playing');
+      a.addEventListener('ended', () => audioRef.current === a && playFrom(i + 1));
       a.play().catch(fail);
     } catch {
       missingAudio.add(src);
@@ -92,22 +110,136 @@ export function ListenButton({ src, small }: { src: string; small?: boolean }) {
     }
   }
 
+  function onClick() {
+    if (state === 'playing') {
+      audioRef.current?.pause();
+      setState('idle');
+      return;
+    }
+    setState('playing');
+    playFrom(0);
+  }
+
+  const label = state === 'playing' ? t(ui.stopListening) : t(ui.listen);
   return (
-    <div className={`listen ${small ? 'listen-small' : ''}`}>
-      <button type="button" className="btn btn-soft" onClick={onClick} aria-pressed={state === 'playing'}>
-        {state === 'playing' ? <IconStop /> : <IconSpeaker />}
-        <span>{state === 'playing' ? t(ui.stopListening) : t(ui.listen)}</span>
+    <span className={`listen ${compact ? 'listen-compact' : ''}`}>
+      <button
+        type="button"
+        className={compact ? 'icon-btn icon-btn-soft' : 'btn btn-soft btn-sm listen-btn'}
+        onClick={onClick}
+        aria-pressed={state === 'playing'}
+        aria-label={compact ? label : undefined}
+        title={compact ? label : undefined}
+      >
+        {state === 'playing' ? <IconStop size={20} /> : <IconSpeaker size={20} />}
+        {!compact && <span>{label}</span>}
       </button>
       {state === 'missing' && (
-        <p className="soon" role="status">
+        <span className="soon" role="status">
           {t(ui.audioSoon)}
-        </p>
+        </span>
       )}
+    </span>
+  );
+}
+
+/** A character saying a line, with a Listen button. */
+export function Bubble({
+  line,
+  level,
+  inBandFolder,
+  moodOverride,
+  onWord,
+  wordLabel,
+}: {
+  line: Line;
+  level: number;
+  inBandFolder?: boolean;
+  moodOverride?: Mood;
+  onWord?: () => void;
+  wordLabel?: string;
+}) {
+  const { t, tx, lang, band } = useT();
+  const src = lineAudio(line, lang, level, band, inBandFolder);
+  return (
+    <div className={`bubble-row ${line.who ? '' : 'narration'}`} data-line={line.id}>
+      {line.who && (
+        <div className="bubble-who">
+          <Character who={line.who} mood={moodOverride ?? line.mood ?? 'happy'} size={52} />
+          <span className="bubble-name">{t(charNames[line.who])}</span>
+        </div>
+      )}
+      <div className="bubble">
+        <p className="clue-text" lang={lang}>
+          <RichText text={tx(line.text)} onWord={onWord} wordLabel={wordLabel} />
+        </p>
+        <ListenButton srcs={[src]} />
+      </div>
     </div>
   );
 }
 
-/** Small note shown once if localStorage is blocked. */
+/** Hint (after a wrong try) or success message, with a character reaction. */
+export function Feedback({ kind, text, src, who = 'tala' }: { kind: 'hint' | 'good'; text: string; src: string; who?: Line['who'] }) {
+  const { t, lang } = useT();
+  return (
+    <div className={`feedback ${kind}`} role="status" aria-live="polite">
+      {who && <Character who={who} mood={kind === 'good' ? 'happy' : 'think'} size={44} />}
+      <div className="feedback-body">
+        {kind === 'hint' && <strong>{t(ui.tryAgainHint)}</strong>}
+        <p lang={lang}>{text}</p>
+      </div>
+      <ListenButton srcs={[src]} compact />
+    </div>
+  );
+}
+
+/** Bottom sheet on phones, centred dialog on wider screens. */
+export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+  const { t } = useT();
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title} onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h2 className="grow">{title}</h2>
+          <button type="button" className="icon-btn" onClick={onClose} aria-label={t(ui.close)}>
+            <IconClose />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** Short message that fades out by itself. */
+export function useToast(): [ReactNode, (msg: ReactNode) => void] {
+  const [msg, setMsg] = useState<ReactNode>(null);
+  const timer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(timer.current), []);
+  const show = (m: ReactNode) => {
+    window.clearTimeout(timer.current);
+    setMsg(m);
+    timer.current = window.setTimeout(() => setMsg(null), 2800);
+  };
+  return [
+    msg ? (
+      <div className="toast" role="status">
+        {msg}
+      </div>
+    ) : null,
+    show,
+  ];
+}
+
+/** Small note shown if localStorage is blocked. */
 export function StorageNotice() {
   const { t } = useT();
   if (storageAvailable()) return null;

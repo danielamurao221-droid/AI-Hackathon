@@ -2,19 +2,23 @@ Basa Quest audio folder
 =======================
 
 Put recorded MP3 files here. The app finds them automatically. No code changes.
-Until a file exists, the app shows "Audio coming soon".
+Until a file exists, the Listen (Makinig) button shows "Audio coming soon".
 
-Story pages:   {lang}/level-{n}/band-{a|b}/page-{p}.mp3
-Questions:     {lang}/level-{n}/question-{q}.mp3     (q = 1 to 5, shared by both bands)
+Text that differs by reading band:  {lang}/level-{n}/band-{a|b}/{id}.mp3
+Text shared by both bands:          {lang}/level-{n}/{id}.mp3
 
   lang = fil or en
-  n    = level number (1, 2, 3)
-  p    = page number, starting at 1
+  n    = level number (1)
+  id   = the line id in src/content/level1.ts (for example "supplies-1"),
+         or for hints and "correct!" messages: "{scene}-hint-{key}", "{scene}-ok"
 
 Examples:
-  fil/level-1/band-a/page-1.mp3
-  en/level-2/band-b/page-4.mp3
-  fil/level-3/question-5.mp3
+  fil/level-1/band-a/hook-1.mp3
+  en/level-1/band-b/build-step-2.mp3
+  fil/level-1/decide-give-1.mp3
+  en/level-1/proof-hint-proof-p2.mp3
 
-Band A has 3 pages per level. Band B has 4 pages per level.
-Keep files small (mono, 64 kbps MP3 is plenty for speech).
+Get the full list (with the exact text to read) by running, in the basa-quest folder:
+  npm run audio:list > audio-list.tsv
+
+Keep files small: mono, 64 kbps MP3 is plenty for speech.
